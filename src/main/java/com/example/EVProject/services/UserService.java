@@ -62,7 +62,7 @@ public class UserService {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
-        if (userRepository.existsByEmail(req.getEmail())) {
+        if (userRepository.existsByEmailNative(req.getEmail()) > 0) {
             throw new RuntimeException("Email already exists");
         }
 
@@ -74,7 +74,7 @@ public class UserService {
         user.setEnabled(false);
 
         Role roleEntity = roleRepository.findByName("ROLE_" + req.getRole().toUpperCase())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_" + req.getRole().toUpperCase()));
         user.setRoles(Collections.singleton(roleEntity));
 
         System.out.println("ROLE from request = " + req.getRole());
@@ -87,6 +87,7 @@ public class UserService {
                 evOwner.setUsername(savedUser.getUsername());
                 evOwner.setEAccountNumber(req.getE_account_number());
                 evOwner.setMobileNumber(req.getMobile_number());
+                // Fix: Use the correct getter name with underscores
                 evOwner.setNoOfVehiclesOwned(req.getNo_of_vehicles_owned());
                 // Generate unique ID tag
                 String idTag = "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -115,7 +116,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.getEmail().equals(userDTO.getEmail()) &&
-                userRepository.existsByEmail(userDTO.getEmail())) {
+                userRepository.existsByEmailNative(userDTO.getEmail()) > 0) {
             throw new RuntimeException("Email already exists");
         }
 

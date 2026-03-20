@@ -14,6 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -30,6 +31,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                // Explicitly enabling CORS with the source defined below
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) 
+                .authorizeHttpRequests(auth -> auth
+                        // Permit all OPTIONS (Preflight) requests
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public Auth endpoints
+                        .requestMatchers("/api/auth/**").permitAll() 
+                        .requestMatchers("/api/**").permitAll()
+                        
+                        // Role-based endpoints
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // allow register, login, OTP
@@ -57,11 +68,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // ✅ Explicitly allow your frontend origins
-        config.setAllowedOriginPatterns(List.of("http://10.99.0.68","http://localhost:8095"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        
+        // Added http://localhost:8082 and 127.0.0.1 to match your browser logs
+        config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:8082",
+            "http://127.0.0.1:8082",
+            "http://localhost:3000",
+            "http://localhost:8095",
+            "http://10.99.0.68",
+            "http://10.128.1.227:*"
+        ));
+        
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Using "*" in allowed headers is fine for development
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L); // Cache preflight response for 1 hour
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
