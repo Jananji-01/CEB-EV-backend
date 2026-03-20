@@ -161,15 +161,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegistrationRequest req) {
         try {
-            RegistrationRequest dto = new RegistrationRequest();
-            dto.setUsername(req.getUsername());
-            dto.setEmail(req.getEmail());
-            dto.setE_account_number(req.getE_account_number());
-            dto.setPassword(req.getPassword());
-            dto.setRole(req.getRole());
-
-            userService.createUser(dto);
-
+            userService.createUser(req);
             return ResponseEntity.ok(new ApiResponse(true, "Registered. OTP sent to email."));
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 public class ChargingSession {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "charging_session_seq")
+    @SequenceGenerator(name = "charging_session_seq", sequenceName = "CHARGING_SESSION_SEQ", allocationSize = 1)
     @Column(name = "session_id")
     private Integer sessionId;
 

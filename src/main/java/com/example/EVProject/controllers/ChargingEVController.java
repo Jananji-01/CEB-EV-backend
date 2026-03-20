@@ -623,12 +623,14 @@ package com.example.EVProject.controllers;
 
 import com.example.EVProject.dto.ChargingSessionDTO;
 import com.example.EVProject.model.ChargingSession;
+import com.example.EVProject.model.EvOwner;
 import com.example.EVProject.model.IdTagInfo;
 import com.example.EVProject.services.ChargingSessionService;
 import com.example.EVProject.services.OcppWebSocketService;
 import com.example.EVProject.repositories.SmartPlugRepository;
 import com.example.EVProject.repositories.IdTagInfoRepository;
 import com.example.EVProject.repositories.ChargingSessionRepository;
+import com.example.EVProject.repositories.EvOwnerRepository;
 import com.example.EVProject.model.SmartPlug;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -661,6 +663,9 @@ public class ChargingEVController {
     
     @Autowired
     private IdTagInfoRepository idTagInfoRepository;
+
+    @Autowired
+    private EvOwnerRepository evOwnerRepository;
     
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -761,35 +766,55 @@ public class ChargingEVController {
     }
 
     @PostMapping("/device/{idDevice}/prepare")
-    public ResponseEntity<Map<String, Object>> prepareDevice(@PathVariable String idDevice) {
+    public ResponseEntity<Map<String, Object>> prepareDevice(
+            @PathVariable String idDevice,
+            @RequestBody(required = false) Map<String, String> request) {
         try {
-            // Generate a temporary idTag with expiry (not used for actual session)
-            String idTag = generateIdTag("PREP-" + idDevice);
-            
-            // Create temporary IdTagInfo with short expiry (5 minutes for prepare mode)
-            IdTagInfo tempTag = new IdTagInfo();
-            tempTag.setIdDevice(idDevice);
-            tempTag.setIdTag(idTag);
-            tempTag.setStatus("Accepted");
-            tempTag.setExpiryDate(LocalDateTime.now().plusMinutes(5));
-            tempTag.setCreatedAt(LocalDateTime.now());
-            idTagInfoRepository.save(tempTag);
-            
+            // Extract EV owner account number from request
+            String evOwnerAccountNo = null;
+            if (request != null && request.containsKey("evOwnerAccountNo")) {
+                evOwnerAccountNo = request.get("evOwnerAccountNo");
+            }
+
+            if (evOwnerAccountNo == null || evOwnerAccountNo.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "EV owner account number is required"
+                ));
+            }
+
+            // Look up owner by account number
+            Optional<EvOwner> ownerOpt = evOwnerRepository.findByEAccountNumber(evOwnerAccountNo);
+            if (ownerOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Invalid EV owner account number"
+                ));
+            }
+            EvOwner owner = ownerOpt.get();
+            String idTag = owner.getIdTag();
+
+            // Create/update IdTagInfo record linking device to owner's persistent idTag
+            IdTagInfo tagInfo = new IdTagInfo();
+            tagInfo.setIdDevice(idDevice);
+            tagInfo.setIdTag(idTag);
+            tagInfo.setStatus("Accepted");
+            tagInfo.setExpiryDate(LocalDateTime.now(ZoneOffset.UTC).plusYears(1)); // 1 year validity
+            tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            idTagInfoRepository.save(tagInfo);
+            System.out.println("💾 Linked device " + idDevice + " to owner " + evOwnerAccountNo + " (idTag: " + idTag + ")");
+
+            // Send RemoteStartTransaction with the owner's idTag
             boolean sent = ocppWebSocketService.sendRemoteStartTransaction(idDevice, idTag, 1);
             if (!sent) {
-                // Clean up temp tag if send fails
-                idTagInfoRepository.delete(tempTag);
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Device not connected or failed to send prepare command"
                 ));
             }
-            
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Prepare command sent to device. Device is now ready.",
-                "idTag", idTag,
-                "expiryDate", tempTag.getExpiryDate().toString()
+                "message", "Prepare command sent to device. Device is now ready."
             ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
@@ -807,7 +832,6 @@ public class ChargingEVController {
         try {
             // Check if device is connected via WebSocket
             boolean isConnected = ocppWebSocketService.isDeviceConnected(idDevice);
-            
             if (!isConnected) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
@@ -815,92 +839,40 @@ public class ChargingEVController {
                     "idDevice", idDevice
                 ));
             }
-            
-            String idTag = request.get("idTag");
+
             String evOwnerAccountNo = request.get("evOwnerAccountNo");
-            
-            // Validate or generate IdTag
-            if (idTag == null || idTag.isEmpty()) {
-                // Generate new IdTag with 6 hours expiry (matching REST API pattern)
-                idTag = generateIdTag(idDevice);
-                
-                // Check for existing valid tags first
-                List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(idDevice);
-                LocalDateTime now = LocalDateTime.now();
-                IdTagInfo validTag = null;
-                
-                for (IdTagInfo tag : existingTags) {
-                    if (tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus())) {
-                        validTag = tag;
-                        idTag = tag.getIdTag();
-                        System.out.println("✅ Reusing valid IdTag: " + idTag + " (expires: " + tag.getExpiryDate() + ")");
-                        break;
-                    }
-                }
-                
-                // If no valid tag exists, create new one with 6 hours expiry
-                if (validTag == null) {
-                    IdTagInfo newTag = new IdTagInfo();
-                    newTag.setIdDevice(idDevice);
-                    newTag.setIdTag(idTag);
-                    newTag.setStatus("Accepted");
-                    newTag.setExpiryDate(now.plusHours(6));
-                    newTag.setCreatedAt(now);
-                    idTagInfoRepository.save(newTag);
-                    System.out.println("✅ Created new IdTag: " + idTag + " (expires: " + newTag.getExpiryDate() + ")");
-                }
-            } else {
-                // Validate provided IdTag
-                Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag);
-                LocalDateTime now = LocalDateTime.now();
-                
-                if (tagOpt.isEmpty()) {
-                    return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Invalid IdTag: not found"
-                    ));
-                }
-                
-                IdTagInfo tag = tagOpt.get();
-                
-                // Check expiry (same logic as REST API)
-                if (tag.getExpiryDate().isBefore(now)) {
-                    return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "IdTag has expired",
-                        "expiryDate", tag.getExpiryDate().toString()
-                    ));
-                }
-                
-                // Check status
-                if (!"Accepted".equals(tag.getStatus())) {
-                    return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "IdTag status is: " + tag.getStatus()
-                    ));
-                }
-                
-                // Check device ownership
-                if (!idDevice.equals(tag.getIdDevice())) {
-                    return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "IdTag does not belong to this device"
-                    ));
-                }
+            if (evOwnerAccountNo == null || evOwnerAccountNo.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "EV owner account number is required"
+                ));
             }
 
-            if (evOwnerAccountNo != null && !evOwnerAccountNo.isEmpty()) {
-                ocppWebSocketService.storeEvOwnerAccountByDeviceId(idDevice, evOwnerAccountNo);
-                System.out.println("💾 Stored EV owner account for device " + idDevice + ": " + evOwnerAccountNo);
+            // Look up owner by account number
+            Optional<EvOwner> ownerOpt = evOwnerRepository.findByEAccountNumber(evOwnerAccountNo);
+            if (ownerOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Invalid EV owner account number"
+                ));
             }
+            EvOwner owner = ownerOpt.get();
+            String idTag = owner.getIdTag();
+
+            // Create/update IdTagInfo record (ensures association exists)
+            IdTagInfo tagInfo = new IdTagInfo();
+            tagInfo.setIdDevice(idDevice);
+            tagInfo.setIdTag(idTag);
+            tagInfo.setStatus("Accepted");
+            tagInfo.setExpiryDate(LocalDateTime.now(ZoneOffset.UTC).plusYears(1));
+            tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+            idTagInfoRepository.save(tagInfo);
             
             int connectorId = Integer.parseInt(request.getOrDefault("connectorId", "1"));
             
-            // Send RemoteStartTransaction via WebSocket
+            // Send RemoteStartTransaction with owner's idTag
             boolean sent = ocppWebSocketService.sendRemoteStartTransaction(idDevice, idTag, connectorId);
-            
             if (!sent) {
-                ocppWebSocketService.removeEvOwnerAccountByDeviceId(idDevice);
                 return ResponseEntity.internalServerError().body(Map.of(
                     "success", false,
                     "message", "Failed to send start command to device"
@@ -1229,15 +1201,15 @@ public class ChargingEVController {
         return String.format("%02d:%02d:%02d", hours, minutes, secs);
     }
     
-    // Generate unique idTag for device - same logic as in ChargingStationController
-    private String generateIdTag(String baseValue) {
+    // Generate unique idTag for device
+    private String generateIdTag(String idDevice) {
         try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
-            String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-            return "IDT-" + hex.substring(0, 8).toUpperCase();
+            // Generate a simple ID tag based on device ID and timestamp
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String hash = idDevice + "-" + timestamp.substring(timestamp.length() - 6);
+            return "IDT-" + hash.toUpperCase();
         } catch (Exception e) {
-            return "IDT-" + baseValue + "-" + LocalDateTime.now().getSecond();
+            return "IDT-" + idDevice + "-" + LocalDateTime.now().getSecond();
         }
     }
     
