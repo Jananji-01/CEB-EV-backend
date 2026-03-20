@@ -41,8 +41,13 @@ import lombok.*;
 public class SampledValue {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sampled_value_seq")
-    @SequenceGenerator(name = "sampled_value_seq", sequenceName = "SAMPLED_VALUE_SEQ", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sampled_values_seq")
+    @SequenceGenerator(
+            name = "sampled_values_seq",
+            sequenceName = "SAMPLED_VALUES_SEQ",
+            allocationSize = 1
+    )
+    @Column(name = "SAMPLE_ID")
     private Long sampleId;
 
     @Column(name = "VALUE")

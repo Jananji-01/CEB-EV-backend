@@ -59,7 +59,8 @@ public class UserService {
     }
 
     public User createUser(RegistrationRequest req) {
-        if (userRepository.existsByUsername(req.getUsername())) {
+        // Use the native query methods
+        if (userRepository.existsByUsernameNative(req.getUsername()) > 0) {
             throw new RuntimeException("Username already exists");
         }
         if (userRepository.existsByEmailNative(req.getEmail()) > 0) {

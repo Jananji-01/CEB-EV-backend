@@ -45,8 +45,12 @@ import java.time.LocalDateTime;
 public class IdTagInfo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_tag_info_seq")
-    @SequenceGenerator(name = "id_tag_info_seq", sequenceName = "ID_TAG_INFO_SEQ", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_tag_seq_gen")
+    @SequenceGenerator(
+            name = "id_tag_seq_gen",
+            sequenceName = "ID_TAG_INFO_SEQ",
+            allocationSize = 1
+    )
     private Integer id;
 
     @Column(name = "id_tag", unique = true, nullable = false)

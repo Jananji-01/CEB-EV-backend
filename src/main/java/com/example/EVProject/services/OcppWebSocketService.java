@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
@@ -19,8 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class OcppWebSocketService {
     
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
     
     @Autowired
     private OcppWebSocketSessionRepository sessionRepository;
@@ -31,6 +31,11 @@ public class OcppWebSocketService {
     private final Map<String, WebSocketSession> deviceSessions = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToDevice = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+        // Constructor injection
+    public OcppWebSocketService(@Lazy SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
     
     /**
      * Handle new WebSocket connection
@@ -206,4 +211,178 @@ public class OcppWebSocketService {
         return 0.0;
     }
 
+    // Temporary storage for EV owner account numbers keyed by idTag
+    private final Map<String, String> deviceEvOwnerAccounts = new ConcurrentHashMap<>();
+
+    public void storeEvOwnerAccountByDeviceId(String deviceId, String evOwnerAccountNo) {
+        if (deviceId != null && evOwnerAccountNo != null) {
+            deviceEvOwnerAccounts.put(deviceId, evOwnerAccountNo);
+            System.out.println("💾 Stored EV owner account for device " + deviceId + ": " + evOwnerAccountNo);
+        }
+    }
+
+    public String retrieveEvOwnerAccountByDeviceId(String deviceId) {
+        return deviceEvOwnerAccounts.remove(deviceId); // one‑time use
+    }
+
+    public void removeEvOwnerAccountByDeviceId(String deviceId) {
+        deviceEvOwnerAccounts.remove(deviceId);
+    }
 }
+
+
+// package com.example.EVProject.services;
+
+// import com.example.EVProject.model.OcppWebSocketSession;
+// import com.example.EVProject.repositories.OcppWebSocketSessionRepository;
+// import com.fasterxml.jackson.databind.ObjectMapper;
+// import com.fasterxml.jackson.databind.node.ArrayNode;
+// import com.fasterxml.jackson.databind.node.ObjectNode;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.stereotype.Service;
+// import org.springframework.web.socket.TextMessage;
+// import org.springframework.web.socket.WebSocketSession;
+
+// import java.io.IOException;
+// import java.time.LocalDateTime;
+// import java.util.Map;
+// import java.util.concurrent.ConcurrentHashMap;
+
+// @Service
+// public class OcppWebSocketService {
+
+//     @Autowired
+//     private OcppMessageProcessor ocppMessageProcessor;
+    
+//     @Autowired(required = false)
+//     private OcppWebSocketSessionRepository sessionRepository;
+
+//     private final Map<String, WebSocketSession> deviceSessions = new ConcurrentHashMap<>();
+//     private final Map<String, String> sessionToDevice = new ConcurrentHashMap<>();
+//     private final ObjectMapper objectMapper = new ObjectMapper();
+
+//     /**
+//      * Handle new WebSocket connection
+//      */
+//     public void registerDeviceSession(String deviceId, WebSocketSession session) {
+//         System.out.println("🔌 Registering device session: " + deviceId);
+        
+//         // Store session mappings
+//         deviceSessions.put(deviceId, session);
+//         sessionToDevice.put(session.getId(), deviceId);
+        
+//         // Save to database if repository is available
+//         if (sessionRepository != null) {
+//             try {
+//                 OcppWebSocketSession sessionEntity = new OcppWebSocketSession();
+//                 sessionEntity.setSessionId(session.getId());
+//                 sessionEntity.setIdDevice(deviceId);
+//                 sessionEntity.setConnectedAt(LocalDateTime.now());
+//                 sessionEntity.setStatus("CONNECTED");
+//                 sessionRepository.save(sessionEntity);
+//             } catch (Exception e) {
+//                 System.err.println("⚠️ Could not save session to database: " + e.getMessage());
+//             }
+//         }
+        
+//         System.out.println("✅ Device registered successfully. Total devices: " + deviceSessions.size());
+//     }
+
+//     /**
+//      * Handle incoming WebSocket message
+//      */
+//     public void handleOcppMessage(WebSocketSession session, String message) {
+//         String sessionId = session.getId();
+//         String deviceId = sessionToDevice.get(sessionId);
+        
+//         System.out.println("📨 Handling message for session: " + sessionId);
+//         System.out.println("   Device ID from mapping: " + deviceId);
+//         System.out.println("   Session map size: " + sessionToDevice.size());
+//         System.out.println("   Device sessions: " + deviceSessions.keySet());
+        
+//         if (deviceId == null) {
+//             System.err.println("❌ Received message from unknown session!");
+//             return;
+//         }
+        
+//         try {
+//             System.out.println("🔄 Processing message for device: " + deviceId);
+//             System.out.println("📨 Message content: " + message);
+            
+//             // Process OCPP message
+//             String response = ocppMessageProcessor.processMessage(deviceId, message);
+            
+//             System.out.println("📦 Processor returned: " + response);
+            
+//             // Send response back to device
+//             if (response != null && session.isOpen()) {
+//                 session.sendMessage(new TextMessage(response));
+//                 System.out.println("✅ Response sent successfully to " + deviceId);
+//             } else {
+//                 System.out.println("⚠️ No response to send or session closed");
+//             }
+            
+//         } catch (IOException e) {
+//             System.err.println("❌ Failed to send response to device: " + e.getMessage());
+//         } catch (Exception e) {
+//             System.err.println("❌ Error processing OCPP message: " + e.getMessage());
+//             e.printStackTrace();
+//         }
+//     }
+
+//     /**
+//      * Remove device session on disconnect
+//      */
+//     public void removeDeviceSession(String deviceId) {
+//         WebSocketSession session = deviceSessions.remove(deviceId);
+//         if (session != null) {
+//             sessionToDevice.remove(session.getId());
+//             System.out.println("🔌 Device session removed: " + deviceId);
+//         }
+        
+//         // Update database if repository is available
+//         if (sessionRepository != null && session != null) {
+//             try {
+//                 sessionRepository.findBySessionId(session.getId()).ifPresent(sessionEntity -> {
+//                     sessionEntity.setDisconnectedAt(LocalDateTime.now());
+//                     sessionEntity.setStatus("DISCONNECTED");
+//                     sessionRepository.save(sessionEntity);
+//                 });
+//             } catch (Exception e) {
+//                 System.err.println("⚠️ Could not update session in database: " + e.getMessage());
+//             }
+//         }
+//     }
+
+//     // Send heartbeat over WebSocket
+//     public boolean sendHeartbeat(String deviceId) {
+//         WebSocketSession session = deviceSessions.get(deviceId);
+
+//         if (session == null || !session.isOpen()) {
+//             System.err.println("❌ Heartbeat: Device not connected");
+//             return false;
+//         }
+
+//         try {
+//             // OCPP Heartbeat CALL message
+//             ArrayNode message = objectMapper.createArrayNode();
+//             message.add(2); // CALL
+//             message.add("heartbeat-" + System.currentTimeMillis());
+//             message.add("Heartbeat");
+//             message.add(objectMapper.createObjectNode()); // empty payload
+
+//             session.sendMessage(new TextMessage(message.toString()));
+//             System.out.println("✅ Heartbeat sent to " + deviceId);
+//             return true;
+            
+//         } catch (Exception e) {
+//             System.err.println("❌ Failed to send heartbeat: " + e.getMessage());
+//             return false;
+//         }
+//     }
+
+//     public boolean isDeviceConnected(String deviceId) {
+//         WebSocketSession session = deviceSessions.get(deviceId);
+//         return session != null && session.isOpen();
+//     }
+// }

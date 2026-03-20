@@ -76,7 +76,8 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://localhost:8095",
             "http://10.99.0.68",
-            "http://10.128.1.227:*"
+            "http://10.128.1.227:*",
+            "https://smartplug.ceb.lk"
         ));
         
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
