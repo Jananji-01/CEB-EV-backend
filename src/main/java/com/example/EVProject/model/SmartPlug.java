@@ -48,6 +48,7 @@ package com.example.EVProject.model;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -55,6 +56,7 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
+@Data
 @Entity
 @Table(name = "smart_plug")
 public class SmartPlug {

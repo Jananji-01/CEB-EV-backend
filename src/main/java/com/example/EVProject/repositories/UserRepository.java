@@ -38,4 +38,6 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     // Keep the standard JPA method if needed elsewhere
     boolean existsById(String username);
+
+    boolean existsByUsername(String username);
 }

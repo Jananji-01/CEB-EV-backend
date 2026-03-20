@@ -3,10 +3,7 @@ package com.example.EVProject.model;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -14,6 +11,7 @@ import java.util.Set;
 
 @Getter
 @Setter
+@Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
