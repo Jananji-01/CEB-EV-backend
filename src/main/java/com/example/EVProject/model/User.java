@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Set;
 
@@ -14,7 +15,7 @@ import java.util.Set;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user")
+@Table(name = "APP_USER")
 public class User {
 
     @Id
@@ -35,7 +36,7 @@ public class User {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_roles",
+            name = "USER_ROLES",
             joinColumns = @JoinColumn(name = "username"),  // FK to user.username
             inverseJoinColumns = @JoinColumn(name = "role_id") // FK to role.id
     )
@@ -48,7 +49,7 @@ public class User {
     private String lastOtp;
 
     @Column(name = "otp_expiry")
-    private OffsetDateTime otpExpiry;
+    private LocalDateTime otpExpiry;
 
     // getters and setters
 
