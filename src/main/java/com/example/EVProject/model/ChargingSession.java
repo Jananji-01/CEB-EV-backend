@@ -38,6 +38,9 @@ public class ChargingSession {
     @Column(name = "id_device")
     private String idDevice;
 
+    @Column(name = "ev_owner_account_no")
+    private String evOwnerAccountNo;
+
     @Transient
     private String status;
 
@@ -46,5 +49,7 @@ public class ChargingSession {
     private SmartPlug smartPlug;
 
     // getters and setters
+    public String getEvOwnerAccountNo() { return evOwnerAccountNo; }
+    public void setEvOwnerAccountNo(String evOwnerAccountNo) { this.evOwnerAccountNo = evOwnerAccountNo; }
 
 }

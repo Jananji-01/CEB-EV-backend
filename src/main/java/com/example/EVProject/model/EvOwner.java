@@ -11,28 +11,32 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ev_owner")
+@Table(name = "EV_OWNER")
 public class EvOwner {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ev_owner_id")
-    private Integer evOwnerId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ev_owner_seq")
+    @SequenceGenerator(name = "ev_owner_seq", sequenceName = "EV_OWNER_SEQ", allocationSize = 1)
+    @Column(name = "EV_OWNER_ID")
+    private Long evOwnerId;
 
-    @Column(name = "username", unique = true,nullable = false)
+    @Column(name = "USERNAME", unique = true,nullable = false)
     private String username;
 
-    @Column(name = "no_of_vehicles_owned")
+    @Column(name = "NO_OF_VEHICLES_OWNED")
     private Integer noOfVehiclesOwned;
 
-    @Column(name = "mobile_number")
+    @Column(name = "MOBILE_NUMBER")
     private String mobileNumber;
 
-    @Column(name = "e_account_number")
+    @Column(name = "E_ACCOUNT_NUMBER")
     private String eAccountNumber;
 
+    @Column(name = "ID_TAG")
+    private String idTag;
+
     @OneToOne
-    @JoinColumn(name = "username", referencedColumnName = "username",insertable = false,updatable = false)
+    @JoinColumn(name = "USERNAME", referencedColumnName = "USERNAME",insertable = false,updatable = false)
     private User user;
 
     // getters and setters

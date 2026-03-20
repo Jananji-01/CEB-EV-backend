@@ -129,6 +129,18 @@ public class ChargingSessionService {
         return savedSession.getSessionId();
     }
 
+    // Add to ChargingSessionService.java
+    public ChargingSession getActiveSession(String idDevice) {
+        return repository.findByIdDeviceAndEndTimeIsNull(idDevice)
+                .orElse(null);
+    }
+
+    public List<ChargingSession> getActiveSessions() {
+        return repository.findAll().stream()
+                .filter(session -> session.getEndTime() == null)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void endChargingSession(Integer transactionId, Long meterStop, String timestampStr) {
         var sessionOpt = repository.findById(transactionId);

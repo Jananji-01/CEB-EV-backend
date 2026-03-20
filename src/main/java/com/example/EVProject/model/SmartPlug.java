@@ -32,6 +32,9 @@ public class SmartPlug {
     @Column(name = "firmware_version")
     private String firmwareVersion;
 
+    @Column(name = "status")
+    private String status;
+
     @ManyToOne
     @JoinColumn(name = "station_id", referencedColumnName = "station_id", insertable = false, updatable = false)
     private ChargingStation chargingStation;

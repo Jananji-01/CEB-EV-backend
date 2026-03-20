@@ -297,16 +297,27 @@ public class ChargingStationController {
             idDeviceValidator.validate(bodyIdDevice);
 
             // 4️⃣ Check if IdTag already exists for this IdDevice
-            Optional<IdTagInfo> existingTagOpt = idTagInfoRepository.findByIdDevice(bodyIdDevice);
+            List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(bodyIdDevice);
             IdTagInfo tagRecord;
             String idTag;
             LocalDateTime expiryDate;
 
-            if (existingTagOpt.isPresent() && existingTagOpt.get().getExpiryDate().isAfter(LocalDateTime.now())) {
-                // ✅ Reuse existing IdTag if still valid
-                tagRecord = existingTagOpt.get();
+            IdTagInfo validTag = null;
+
+            for (IdTagInfo tag : existingTags) {
+                if (tag.getExpiryDate().isAfter(LocalDateTime.now())) {
+                    validTag = tag;
+                    break;
+                }
+            }
+
+            if (validTag != null) {
+
+                // reuse valid tag
+                tagRecord = validTag;
                 idTag = tagRecord.getIdTag();
                 expiryDate = tagRecord.getExpiryDate();
+
             } else {
 
                 // Fetch SmartPlug details (for cebSerialNo or username)
@@ -320,7 +331,7 @@ public class ChargingStationController {
                         : plug.getIdDevice();
 
                 idTag = generateIdTag(accountReference);
-                expiryDate = LocalDateTime.of(2025, 12, 31, 23, 59, 59);
+                expiryDate = LocalDateTime.now().plusHours(6);
 
                 tagRecord = new IdTagInfo();
                 tagRecord.setIdDevice(bodyIdDevice);
@@ -372,122 +383,182 @@ public class ChargingStationController {
         }
     }
 
-    @PostMapping("/startTransaction")
-    public ResponseEntity<?> handleStartTransaction(
-            @RequestBody String rawBody,
-            @RequestHeader("IdDevice") String headerIdDevice) {
+    // @PostMapping("/startTransaction")
+    // public ResponseEntity<?> handleStartTransaction(
+    //         @RequestBody String rawBody,
+    //         @RequestHeader("IdDevice") String headerIdDevice) {
 
-        LocalDateTime receivedAt = LocalDateTime.now();
+    //     LocalDateTime receivedAt = LocalDateTime.now();
 
-        try {
-            // 2. Validate header IdDevice
-            idDeviceValidator.validate(headerIdDevice);
+    //     try {
+    //         // 2. Validate header IdDevice
+    //         idDeviceValidator.validate(headerIdDevice);
 
-            // 3. Parse OCPP message array
-            var parsed = OcppMessageParser.parse(rawBody);
-            if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Invalid message type or action. Expected StartTransaction"));
-            }
+    //         // 3. Parse OCPP message array
+    //         var parsed = OcppMessageParser.parse(rawBody);
+    //         if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
+    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+    //                     .body(Map.of("error", "Invalid message type or action. Expected StartTransaction"));
+    //         }
 
-            // 4. Extract and validate payload fields
-            var payload = parsed.payload();
-            Integer connectorId = payload.has("connectorId") ? payload.get("connectorId").asInt() : 1;
-            String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
-            long meterStart = payload.has("meterStart") ? payload.get("meterStart").asLong() : 0L;
-            String ts = payload.has("timestamp") ? payload.get("timestamp").asText() : null;
+    //         // 4. Extract and validate payload fields
+    //         var payload = parsed.payload();
+    //         Integer connectorId = payload.has("connectorId") ? payload.get("connectorId").asInt() : 1;
+    //         String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
+    //         long meterStart = payload.has("meterStart") ? payload.get("meterStart").asLong() : 0L;
+    //         String ts = payload.has("timestamp") ? payload.get("timestamp").asText() : null;
 
-            if (idTag == null || idTag.isEmpty()) {
-                // idTag missing → Invalid
-                Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
-            }
+    //         if (idTag == null || idTag.isEmpty()) {
+    //             // idTag missing → Invalid
+    //             Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
+    //         }
 
-            // 5. Validate idTag exists and is accepted
-            var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, headerIdDevice);
+    //         // 5. Validate idTag exists and is accepted
+    //         var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, headerIdDevice);
 
-            if (tagOpt.isEmpty()) {
-                Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse); // OCPP uses CALLRESULT even for invalid
-            }
-            var tag = tagOpt.get();
+    //         if (tagOpt.isEmpty()) {
+    //             Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.ok(ocppResponse); // OCPP uses CALLRESULT even for invalid
+    //         }
+    //         var tag = tagOpt.get();
 
-            // check status & expiry
-            if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
-                Map<String, Object> idTagInfo = Map.of("status", tag.getStatus());
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse);
-            }
-            if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
-                Map<String, Object> idTagInfo = Map.of("status", "Expired");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse);
-            }
+    //         // check status & expiry
+    //         if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
+    //             Map<String, Object> idTagInfo = Map.of("status", tag.getStatus());
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.ok(ocppResponse);
+    //         }
+    //         if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
+    //             Map<String, Object> idTagInfo = Map.of("status", "Expired");
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.ok(ocppResponse);
+    //         }
 
-            // 6. Ensure idTag belongs to the header IdDevice
-            if (!headerIdDevice.equals(tag.getIdDevice())) {
-                // mismatch between where IdTag was issued and header device
-                Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse);
-            }
+    //         // 6. Ensure idTag belongs to the header IdDevice
+    //         if (!headerIdDevice.equals(tag.getIdDevice())) {
+    //             // mismatch between where IdTag was issued and header device
+    //             Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.ok(ocppResponse);
+    //         }
 
-            // 7. Check for concurrent transaction (service throws if found)
-            Long transactionId;
-            try {
-                transactionId = Long.valueOf(chargingSessionService.startNewChargingSession(headerIdDevice, idTag, connectorId, meterStart));
-            } catch (IllegalStateException ex) {
-                // ConcurrentTx
-                Map<String, Object> idTagInfo = Map.of("status", "ConcurrentTx");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse);
-            }
+    //         // 7. Check for concurrent transaction (service throws if found)
+    //         Long transactionId;
+    //         try {
+    //             transactionId = Long.valueOf(chargingSessionService.startNewChargingSession(headerIdDevice, idTag, connectorId, meterStart));
+    //         } catch (IllegalStateException ex) {
+    //             // ConcurrentTx
+    //             Map<String, Object> idTagInfo = Map.of("status", "ConcurrentTx");
+    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+    //             return ResponseEntity.ok(ocppResponse);
+    //         }
 
-            // 8. Return success with idTagInfo Accepted and transactionId
-            Map<String, Object> idTagInfo = Map.of("status", "Accepted");
-            Map<String, Object> responsePayload = Map.of(
-                    "idTagInfo", idTagInfo,
-                    "transactionId", transactionId
-            );
+    //         // 8. Return success with idTagInfo Accepted and transactionId
+    //         Map<String, Object> idTagInfo = Map.of("status", "Accepted");
+    //         Map<String, Object> responsePayload = Map.of(
+    //                 "idTagInfo", idTagInfo,
+    //                 "transactionId", transactionId
+    //         );
 
-            Object[] ocppResponse = new Object[]{3, parsed.messageId(), responsePayload};
+    //         Object[] ocppResponse = new Object[]{3, parsed.messageId(), responsePayload};
 
-            // 9. Optional logging
-            if (messageLogRepo != null) {
-                OcppMessageLog log = new OcppMessageLog();
-                log.setIdDevice(headerIdDevice);
-                log.setMessageId(parsed.messageId());
-                log.setAction(parsed.action());
-                log.setMessageTypeId(parsed.messageTypeId());
-                log.setPayload(parsed.payload().toString());
-                log.setResponse(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocppResponse));
-                log.setReceivedAt(receivedAt);
-                log.setRespondedAt(LocalDateTime.now());
-                messageLogRepo.save(log);
-            }
+    //         // 9. Optional logging
+    //         if (messageLogRepo != null) {
+    //             OcppMessageLog log = new OcppMessageLog();
+    //             log.setIdDevice(headerIdDevice);
+    //             log.setMessageId(parsed.messageId());
+    //             log.setAction(parsed.action());
+    //             log.setMessageTypeId(parsed.messageTypeId());
+    //             log.setPayload(parsed.payload().toString());
+    //             log.setResponse(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocppResponse));
+    //             log.setReceivedAt(receivedAt);
+    //             log.setRespondedAt(LocalDateTime.now());
+    //             messageLogRepo.save(log);
+    //         }
 
-            return ResponseEntity.ok(ocppResponse);
+    //         return ResponseEntity.ok(ocppResponse);
 
-        } catch (IllegalArgumentException e) {
-            // return invalid idDevice / other validation errors in OCPP format
-            Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-            Object[] ocppResponse = new Object[]{3, "START-TRANS-FAILED", Map.of("idTagInfo", idTagInfo)};
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
+    //     } catch (IllegalArgumentException e) {
+    //         // return invalid idDevice / other validation errors in OCPP format
+    //         Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+    //         Object[] ocppResponse = new Object[]{3, "START-TRANS-FAILED", Map.of("idTagInfo", idTagInfo)};
+    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
+    //     }
+    // }
+
+    // private String generateIdTag(String baseValue) {
+    //     try {
+    //         java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+    //         byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
+    //         String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+    //         return "IDT-" + hex.substring(0, 8).toUpperCase(); // e.g. IDT-8BC9F2C1
+    //     } catch (Exception e) {
+    //         throw new RuntimeException("Error generating IdTag", e);
+    //     }
+    // }
+
+    // private Integer mapStatusStringToCode(String status) {
+    //     return switch (status) {
+    //         case "Available" -> 1;
+    //         case "Preparing" -> 2;
+    //         case "Charging" -> 3;
+    //         case "Finishing" -> 4;
+    //         case "Unavailable" -> 5;
+    //         default -> throw new IllegalArgumentException("Unknown status: " + status);
+    //     };
+    // }
+
+@PostMapping("/startTransaction")
+public ResponseEntity<?> handleStartTransaction(
+        @RequestBody String rawBody,
+        @RequestHeader("IdDevice") String headerIdDevice) {
+
+    try {
+        // 1️⃣ Parse OCPP message
+        var parsed = OcppMessageParser.parse(rawBody);
+        if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid message type or action. Expected StartTransaction"));
         }
+
+        // 2️⃣ Extract idTag
+        var payload = parsed.payload();
+        String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
+        if (idTag == null || idTag.isEmpty()) {
+            Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+            Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+            return ResponseEntity.ok(ocppResponse);
+        }
+
+        // 3️⃣ Fetch status from database
+        Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag); // just find by idTag
+        String status = tagOpt.map(IdTagInfo::getStatus).orElse("Invalid");
+
+        // 4️⃣ Return only STATUS
+        Map<String, Object> idTagInfo = Map.of("status", status);
+        Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+        return ResponseEntity.ok(ocppResponse);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
     }
+}
 
     private String generateIdTag(String baseValue) {
         try {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
             String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-            return "IDT-" + hex.substring(0, 8).toUpperCase(); // e.g. IDT-8BC9F2C1
+            return "IDT-" + hex.substring(0, 8).toUpperCase();
         } catch (Exception e) {
             throw new RuntimeException("Error generating IdTag", e);
         }

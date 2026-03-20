@@ -36,6 +36,8 @@ public class RegistrationRequest {
     // ROOFTOP_SOLAR_OWNER fields
     private String address;
     private Double solarCapacity; // Only for ROOFTOPSOLAROWNER
+
+    public Integer getNo_of_vehicles_owned() { return no_of_vehicles_owned; }
 }
 //    // Getters & Setters
 //    public String getUsername() { return username; }
