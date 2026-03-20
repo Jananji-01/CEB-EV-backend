@@ -11,6 +11,8 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
     List<IdTagInfo> findByIdDevice(String idDevice);
     Optional<IdTagInfo> findByIdTag(String idTag);
     Optional<IdTagInfo> findByIdTagAndIdDevice(String idTag, String idDevice);
+    Optional<IdTagInfo> findTopByIdDeviceOrderByCreatedAtDesc(String idDevice);
+}
 
     @Query(value = """
         SELECT * FROM (

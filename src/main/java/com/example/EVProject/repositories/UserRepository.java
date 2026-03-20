@@ -1,40 +1,16 @@
-////package com.example.EVProject.repositories;
-////
-////import com.example.EVProject.model.User;
-////import org.springframework.data.jpa.repository.JpaRepository;
-////import org.springframework.stereotype.Repository;
-////import java.util.Optional;
-////
-////@Repository
-////public interface UserRepository extends JpaRepository<User, String> {
-////    Optional<User> findByEmail(String email);
-////    boolean existsByEmail(String email);
-////    boolean existsByUsername(String username);
-////}
-//
 //package com.example.EVProject.repositories;
 //
 //import com.example.EVProject.model.User;
-//import io.lettuce.core.dynamic.annotation.Param;
 //import org.springframework.data.jpa.repository.JpaRepository;
-//import org.springframework.data.jpa.repository.Query;
 //import org.springframework.stereotype.Repository;
 //import java.util.Optional;
 //
 //@Repository
 //public interface UserRepository extends JpaRepository<User, String> {
-//
 //    Optional<User> findByEmail(String email);
-//
 //    boolean existsByEmail(String email);
-//
 //    boolean existsByUsername(String username);
-//
-//
-//    @Query(value = "SELECT u.username FROM dacons16.app_user u WHERE u.username = :username FETCH FIRST 1 ROW ONLY", nativeQuery = true)
-//    Optional<String> findUsername(@Param("username") String username);
 //}
-//
 
 package com.example.EVProject.repositories;
 

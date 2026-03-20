@@ -166,12 +166,13 @@ public class SecurityConfig {
 
         // Added http://localhost:8082 and 127.0.0.1 to match your browser logs
         config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:8082",
-                "http://127.0.0.1:8082",
-                "http://localhost:3000",
-                "http://localhost:8095",
-                "http://10.99.0.68",
-                "http://10.128.1.227:*"
+            "http://localhost:8082",
+            "http://127.0.0.1:8082",
+            "http://localhost:3000",
+            "http://localhost:8095",
+            "http://10.99.0.68",
+            "http://10.128.1.227:*",
+            "https://smartplug.ceb.lk"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

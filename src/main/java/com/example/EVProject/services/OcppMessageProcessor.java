@@ -36,8 +36,6 @@ public class OcppMessageProcessor {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // OcppWebSocketService is no longer used – removed
-
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -120,12 +118,17 @@ public class OcppMessageProcessor {
     }
 
     /**
-     * 1. BootNotification Handler
+     * 1. BootNotification Handler - Matches REST API format
      */
     private ObjectNode handleBootNotification(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
 
         try {
+            // Extract payload fields
+            String model = payload.has("chargePointModel") ? payload.get("chargePointModel").asText() : null;
+            String vendor = payload.has("chargePointVendor") ? payload.get("chargePointVendor").asText() : null;
+            String firmware = payload.has("firmwareVersion") ? payload.get("firmwareVersion").asText() : null;
+
             // Update device information
             SmartPlug plug = smartPlugRepository.findById(deviceId)
                     .orElseGet(() -> {
@@ -163,6 +166,8 @@ public class OcppMessageProcessor {
 
         try {
             String deviceIdFromPayload = payload.path("IdDevice").asText();
+            
+            // Validate device ID
             if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
                 System.err.println("❌ Authorize: missing IdDevice in payload");
@@ -459,6 +464,7 @@ public class OcppMessageProcessor {
             Integer transactionId = payload.path("transactionId").asInt();
             Long meterStop = payload.path("meterStop").asLong();
             String timestampStr = payload.path("timestamp").asText();
+            String idTag = payload.has("idTag") ? payload.path("idTag").asText() : null;
 
             // Get session
             var sessionOpt = chargingSessionRepository.findById(transactionId);
@@ -477,6 +483,50 @@ public class OcppMessageProcessor {
                 return response;
             }
 
+            // Validate IdTag if provided - with expiry check
+            if (idTag != null && !idTag.isEmpty()) {
+                var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
+                LocalDateTime now = LocalDateTime.now();
+                
+                if (tagOpt.isEmpty()) {
+                    idTagInfo.put("status", "Invalid");
+                    System.out.println("❌ StopTransaction: IdTag not found: " + idTag);
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+
+                var tag = tagOpt.get();
+                
+                // Check expiry - same logic as REST API
+                if (tag.getExpiryDate().isBefore(now)) {
+                    idTagInfo.put("status", "Expired");
+                    System.out.println("❌ StopTransaction: IdTag expired: " + idTag + 
+                                     " (expired: " + tag.getExpiryDate() + ")");
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+                
+                // Check status
+                if (!"Accepted".equals(tag.getStatus())) {
+                    idTagInfo.put("status", tag.getStatus());
+                    System.out.println("❌ StopTransaction: IdTag status invalid: " + tag.getStatus());
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+            }
+
+            // Process transactionData if present (for meter values)
+            if (payload.has("transactionData")) {
+                JsonNode transactionData = payload.path("transactionData");
+                // Process meter values similar to MeterValues handler
+                // This would be implemented similarly to MeterValues
+            }
+
+            // Use server time
+            LocalDateTime endTime = LocalDateTime.now();
+            System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
+
+            // Calculate duration
             // USE SERVER TIME instead of device timestamp
             LocalDateTime endTime = LocalDateTime.now();
             System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
@@ -617,4 +667,130 @@ public class OcppMessageProcessor {
         }
     }
 
+    /**
+     * Generate a unique IdTag for a device - matches REST API logic
+     */
+    private String generateIdTag(String baseValue) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
+            String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+            return "IDT-" + hex.substring(0, 8).toUpperCase();
+        } catch (Exception e) {
+            return "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+    }
+
+    /**
+     * Send meter values to frontend via STOMP
+     */
+    private void sendMeterValueToFrontend(Map<String, Object> meterData) {
+        try {
+            String deviceId = (String) meterData.get("idDevice");
+            if (deviceId == null) {
+                System.err.println("❌ Cannot send meter data: deviceId is null");
+                return;
+            }
+
+            Map<String, Object> frontendMessage = new HashMap<>();
+            frontendMessage.put("type", "METER_VALUES");
+            frontendMessage.put("idDevice", deviceId);
+            frontendMessage.put("timestamp", meterData.get("timestamp"));
+
+            List<Map<String, Object>> sampledValues = new ArrayList<>();
+
+            if (meterData.containsKey("power")) {
+                Map<String, Object> powerSample = new HashMap<>();
+                powerSample.put("value", meterData.get("power").toString());
+                powerSample.put("measurand", "Power.Active.Import");
+                powerSample.put("unit", "kW");
+                sampledValues.add(powerSample);
+            }
+
+            if (meterData.containsKey("voltage")) {
+                Map<String, Object> voltageSample = new HashMap<>();
+                voltageSample.put("value", meterData.get("voltage").toString());
+                voltageSample.put("measurand", "Voltage");
+                voltageSample.put("unit", "V");
+                sampledValues.add(voltageSample);
+            }
+
+            if (meterData.containsKey("current")) {
+                Map<String, Object> currentSample = new HashMap<>();
+                currentSample.put("value", meterData.get("current").toString());
+                currentSample.put("measurand", "Current.Import");
+                currentSample.put("unit", "A");
+                sampledValues.add(currentSample);
+            }
+
+            if (meterData.containsKey("energy")) {
+                Map<String, Object> energySample = new HashMap<>();
+                energySample.put("value", meterData.get("energy").toString());
+                energySample.put("measurand", "Energy.Active.Import.Register");
+                energySample.put("unit", "kWh");
+                sampledValues.add(energySample);
+            }
+
+            Map<String, Object> meterValueObj = new HashMap<>();
+            meterValueObj.put("sampledValue", sampledValues);
+            frontendMessage.put("meterValue", meterValueObj);
+
+            messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
+            messagingTemplate.convertAndSend("/topic/charging", frontendMessage);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error sending meter data to frontend: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Helper method to check if IdTag is valid and not expired
+     */
+    private boolean isValidIdTag(String idTag, String deviceId) {
+        Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
+        if (tagOpt.isEmpty()) {
+            return false;
+        }
+        
+        IdTagInfo tag = tagOpt.get();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Check expiry and status
+        return tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus());
+    }
+
+    /**
+     * Get or create valid IdTag for device - matches REST API logic
+     */
+    private IdTagInfo getOrCreateValidIdTag(String deviceId) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Check for existing valid tag
+        List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(deviceId);
+        for (IdTagInfo tag : existingTags) {
+            if (tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus())) {
+                return tag;
+            }
+        }
+        
+        // Create new tag with 6 hours expiry
+        SmartPlug plug = smartPlugRepository.findById(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + deviceId));
+        
+        String accountReference = (plug.getCebSerialNo() != null)
+                ? plug.getCebSerialNo()
+                : plug.getIdDevice();
+        
+        String idTag = generateIdTag(accountReference);
+        LocalDateTime expiryDate = now.plusHours(6);
+        
+        IdTagInfo newTag = new IdTagInfo();
+        newTag.setIdDevice(deviceId);
+        newTag.setIdTag(idTag);
+        newTag.setStatus("Accepted");
+        newTag.setExpiryDate(expiryDate);
+        newTag.setCreatedAt(now);
+        
+        return idTagInfoRepository.save(newTag);
+    }
 }

@@ -105,8 +105,8 @@ public class EvOwner {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ev_owner_seq")
     @SequenceGenerator(name = "ev_owner_seq", sequenceName = "EV_OWNER_SEQ", allocationSize = 1)
-    @Column(name = "ev_owner_id")
-    private Integer evOwnerId;
+    @Column(name = "EV_OWNER_ID")
+    private Long evOwnerId;
 
     @Column(name = "USERNAME", unique = true,nullable = false)
     private String username;
@@ -120,7 +120,7 @@ public class EvOwner {
     @Column(name = "E_ACCOUNT_NUMBER")
     private String eAccountNumber;
 
-    @Column(name = "id_tag", unique = true)
+    @Column(name = "ID_TAG", unique = true)
     private String idTag;
 
     @OneToOne
