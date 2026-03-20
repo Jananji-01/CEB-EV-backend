@@ -13,10 +13,9 @@ public class MonthlyConsumptionResponse {
     private Integer month;
     private Integer year;
 
-    // frontend uses this
+    // frontend uses these fields to display the data, they are calculated in the service layer 
     private Double totalConsumption;
-
-    // extra (good for later)
     private Integer totalSessions;
     private Integer totalDurationMinutes;
+    private Double totalAmount;
 }

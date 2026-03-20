@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 public class OcppMessageLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ocpp_message_log_seq")
+    @SequenceGenerator(name = "ocpp_message_log_seq", sequenceName = "OCPP_MESSAGE_LOG_SEQ", allocationSize = 1)
     private Integer id;
 
     @Column(name = "id_device", nullable = false)
