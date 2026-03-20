@@ -27,67 +27,40 @@ public class MonthlyConsumptionService {
     }
 
     public MonthlyConsumptionResponse calculateAndStore(MonthlyConsumptionRequest req) {
-
         String username = req.getUsername();
-        String accountNo = req.getAccountNumber();
+        String accountNo = req.getAccountNumber(); // this is ev_owner_account_no
+
+        if (username == null || accountNo == null) {
+            throw new IllegalArgumentException("Username and account number are required");
+        }
 
         LocalDate now = LocalDate.now();
         int month = (req.getMonth() != null) ? req.getMonth() : now.getMonthValue();
         int year  = (req.getYear()  != null) ? req.getYear()  : now.getYear();
 
-        // accountNumber == smart_plug.ceb_serial_no
-        SmartPlug plug = smartPlugRepo.findFirstByCebSerialNo(accountNo)
-                .orElseThrow(() -> new RuntimeException(
-                        "No device found for this CEB serial/account number: " + accountNo));
-
-        String deviceId = plug.getIdDevice();
-
-        // ✅ Calculate from charging_sessions (no username column there)
-        Integer totalSessions = sessionRepo.countMonthlySessions(deviceId, month, year);
-        Double totalConsumption = sessionRepo.sumMonthlyConsumption(deviceId, month, year);
-        Double durationDouble = sessionRepo.sumMonthlyDurationMinutes(deviceId, month, year);
+        // Aggregate from charging_sessions using ev_owner_account_no
+        Integer totalSessions = sessionRepo.countMonthlySessionsByOwner(accountNo, month, year);
+        Double totalConsumption = sessionRepo.sumMonthlyConsumptionByOwner(accountNo, month, year);
+        Double durationDouble = sessionRepo.sumMonthlyDurationMinutesByOwner(accountNo, month, year);
+        Double totalAmount = sessionRepo.sumMonthlyAmountByOwner(accountNo, month, year);
 
         if (totalSessions == null) totalSessions = 0;
         if (totalConsumption == null) totalConsumption = 0.0;
-
+        if (totalAmount == null) totalAmount = 0.0;
         int totalDurationMinutes = (durationDouble == null) ? 0 : (int) Math.round(durationDouble);
-
         totalConsumption = round3(totalConsumption);
 
-        // ✅ Upsert into monthly_consumption
-        MonthlyConsumption row = monthlyRepo
-                .findByUsernameAndIdDeviceAndMonthAndYear(username, deviceId, month, year)
-                .orElse(MonthlyConsumption.builder()
-                        .username(username)
-                        .eAccountNumber(accountNo)
-                        .idDevice(deviceId)
-                        .month(month)
-                        .year(year)
-                        .build());
-
-        // ✅ Save all totals
-        row.setTotalSessions(totalSessions);
-        row.setTotalConsumption(totalConsumption);
-        row.setTotalDurationMinutes(totalDurationMinutes);
-
-        System.out.println("DEBUG username=" + username);
-        System.out.println("DEBUG accountNo=" + accountNo);
-        System.out.println("DEBUG deviceId=" + deviceId);
-        System.out.println("DEBUG month/year=" + month + "/" + year);
-        System.out.println("DEBUG sessions=" + totalSessions + " cons=" + totalConsumption + " dur=" + totalDurationMinutes);
-
-        monthlyRepo.save(row);
-
-        // ✅ Response
+        // Return response (storage in monthly_consumption is skipped for now)
         return MonthlyConsumptionResponse.builder()
                 .username(username)
                 .accountNumber(accountNo)
-                .idDevice(deviceId)
+                .idDevice("ALL") // placeholder, not used by frontend
                 .month(month)
                 .year(year)
                 .totalConsumption(totalConsumption)
                 .totalSessions(totalSessions)
                 .totalDurationMinutes(totalDurationMinutes)
+                .totalAmount(totalAmount)
                 .build();
     }
 

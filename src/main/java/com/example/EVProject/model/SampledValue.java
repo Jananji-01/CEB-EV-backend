@@ -11,7 +11,8 @@ import lombok.*;
 @Builder
 public class SampledValue {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sampled_value_seq")
+    @SequenceGenerator(name = "sampled_value_seq", sequenceName = "SAMPLED_VALUE_SEQ", allocationSize = 1)
     private Long sampleId;
 
     private Double value;

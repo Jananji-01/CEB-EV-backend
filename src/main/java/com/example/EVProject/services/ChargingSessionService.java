@@ -105,7 +105,7 @@ public class ChargingSessionService {
                 .collect(Collectors.toList());
     }
 
-    public Integer startNewChargingSession(String idDevice, String idTag, Integer connectorId, Long meterStart) {
+    public Integer startNewChargingSession(String idDevice, String idTag, Integer connectorId, Long meterStart, String evOwnerAccountNo) {
         // 1️⃣ Check for existing active session
         Optional<ChargingSession> activeSession = repository.findByIdDeviceAndEndTimeIsNull(idDevice);
         if (activeSession.isPresent()) {
@@ -121,12 +121,25 @@ public class ChargingSessionService {
         session.setTotalConsumption(0.0);
         session.setAmount(0.0);
         session.setSoc(0.0);
+        session.setEvOwnerAccountNo(evOwnerAccountNo);   
 
         // 3️⃣ Save the new session
         ChargingSession savedSession = repository.save(session);
 
         // 4️⃣ Return its session ID (used as transactionId)
         return savedSession.getSessionId();
+    }
+
+    // Add to ChargingSessionService.java
+    public ChargingSession getActiveSession(String idDevice) {
+        return repository.findByIdDeviceAndEndTimeIsNull(idDevice)
+                .orElse(null);
+    }
+
+    public List<ChargingSession> getActiveSessions() {
+        return repository.findAll().stream()
+                .filter(session -> session.getEndTime() == null)
+                .collect(Collectors.toList());
     }
 
     @Transactional

@@ -1,7 +1,7 @@
 package com.example.EVProject.repositories;
 
 import com.example.EVProject.model.EvOwner;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -14,6 +14,14 @@ public interface EvOwnerRepository extends JpaRepository<EvOwner, Integer> {
     Optional<EvOwner> findByUsername(String username);
     boolean existsByUsername(String username);
 
+    // Explicit query to avoid naming resolution issues
+    @Query("SELECT e FROM EvOwner e WHERE e.eAccountNumber = :eAccountNumber")
+    Optional<EvOwner> findByEAccountNumber(@Param("eAccountNumber") String eAccountNumber);
+
+    // Also add explicit query for idTag if needed (but derived should work; kept for consistency)
+    @Query("SELECT e FROM EvOwner e WHERE e.idTag = :idTag")
+    Optional<EvOwner> findByIdTag(@Param("idTag") String idTag);
+
     @Query(value = """
         SELECT
           eo.e_account_number AS accountNo,
@@ -22,9 +30,9 @@ public interface EvOwnerRepository extends JpaRepository<EvOwner, Integer> {
           eo.mobile_number AS contactNo,
           eo.no_of_vehicles_owned AS noOfVehiclesOwned
         FROM ev_owner eo
-        JOIN "user" u ON u.username = eo.username
-        WHERE (:accountNo IS NULL OR LOWER(eo.e_account_number) LIKE LOWER(CONCAT('%', :accountNo, '%')))
-          AND (:username IS NULL OR LOWER(eo.username) LIKE LOWER(CONCAT('%', :username, '%')))
+        JOIN users u ON u.username = eo.username
+        WHERE (:accountNo IS NULL OR LOWER(eo.e_account_number) LIKE LOWER('%' || :accountNo || '%'))
+          AND (:username IS NULL OR LOWER(eo.username) LIKE LOWER('%' || :username || '%'))
         ORDER BY eo.e_account_number
         """, nativeQuery = true)
     List<Object[]> findAdminEvOwnersRaw(

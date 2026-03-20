@@ -1,5 +1,7 @@
 package com.example.EVProject.model;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +34,15 @@ public class SmartPlug {
     @Column(name = "firmware_version")
     private String firmwareVersion;
 
+    @Column(name = "qr_code_data")
+    private String qrCodeData;
+
+    @Column(name = "qr_code_generated_at")
+    private LocalDateTime qrCodeGeneratedAt;
+
+    @Column(name = "status")
+    private String status;
+
     @ManyToOne
     @JoinColumn(name = "station_id", referencedColumnName = "station_id", insertable = false, updatable = false)
     private ChargingStation chargingStation;
@@ -40,6 +51,22 @@ public class SmartPlug {
 
     public SmartPlug getStation(SmartPlug station) {
         return station;
+    }
+
+    public String getQrCodeData() {
+        return qrCodeData;
+    }
+
+    public void setQrCodeData(String qrCodeData) {
+        this.qrCodeData = qrCodeData;
+    }
+
+    public LocalDateTime getQrCodeGeneratedAt() {
+        return qrCodeGeneratedAt;
+    }
+
+    public void setQrCodeGeneratedAt(LocalDateTime qrCodeGeneratedAt) {
+        this.qrCodeGeneratedAt = qrCodeGeneratedAt;
     }
 }
 
