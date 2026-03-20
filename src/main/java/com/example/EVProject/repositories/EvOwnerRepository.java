@@ -1,7 +1,7 @@
 package com.example.EVProject.repositories;
 
 import com.example.EVProject.model.EvOwner;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -34,6 +34,14 @@ public interface EvOwnerRepository extends JpaRepository<EvOwner, Integer> {
 //    );
 //}
 
+
+    // Explicit query to avoid naming resolution issues
+    @Query("SELECT e FROM EvOwner e WHERE e.eAccountNumber = :eAccountNumber")
+    Optional<EvOwner> findByEAccountNumber(@Param("eAccountNumber") String eAccountNumber);
+
+    // Also add explicit query for idTag if needed (but derived should work; kept for consistency)
+    @Query("SELECT e FROM EvOwner e WHERE e.idTag = :idTag")
+    Optional<EvOwner> findByIdTag(@Param("idTag") String idTag);
 
     @Query(value = """
 

@@ -41,13 +41,24 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").permitAll()
                         
                         // Role-based endpoints
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // allow register, login, OTP
+                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/ws-ocpp/**").permitAll() 
+                        .requestMatchers("/ws-stomp/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/topic/**").permitAll()
+                        .requestMatchers("/app/**").permitAll()
+                        .requestMatchers("/user/**").permitAll()
+                        
+                        // role-based endpoints - if you want to keep them secured
                         .requestMatchers("/api/admins/**").hasRole("ADMIN")
                         .requestMatchers("/api/ev-owners/**").hasAuthority("EVOWNER")
                         .requestMatchers("/api/solar-owners/**").hasRole("SOLAROWNER")
                         .requestMatchers("/api/users/**").hasRole("USER")
 
-                        // For troubleshooting, we allow all, but you can restrict this later
-                        .anyRequest().permitAll()              
+                        .anyRequest().permitAll() // protect all other endpoints
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

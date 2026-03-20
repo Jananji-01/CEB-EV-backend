@@ -7,7 +7,8 @@ import jakarta.persistence.*;
 public class Admin {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "admin_seq")
+    @SequenceGenerator(name = "admin_seq", sequenceName = "ADMIN_SEQ", allocationSize = 1)
     @Column(name = "admin_id")
     private Integer adminId;
 
@@ -44,4 +45,3 @@ public class Admin {
         this.user = user;
     }
 }
-

@@ -68,13 +68,9 @@ import java.time.LocalDateTime;
 public class ChargingStation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "charging_station_seq_gen")
-    @SequenceGenerator(
-            name = "charging_station_seq_gen",
-            sequenceName = "CHARGING_STATION_SEQ",
-            allocationSize = 1
-    )
-    @Column(name = "STATION_ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "charging_station_seq")
+    @SequenceGenerator(name = "charging_station_seq", sequenceName = "CHARGING_STATION_SEQ", allocationSize = 1)
+    @Column(name = "station_id")
     private Integer stationId;
 
     @Column(name = "LATITUDE")
