@@ -124,19 +124,6 @@ public class SmartPlugController {
         return plug.getQrCodeData();
     }
 
-    // NEW API → Regenerate QR Code
-    @PostMapping("/{id}/regenerate-qr")
-    public SmartPlugDTO regenerateQRCode(@PathVariable String id) {
-
-        SmartPlugDTO existing = service.getSmartPlugById(id);
-
-        if (existing == null) {
-            throw new RuntimeException("Smart plug not found");
-        }
-
-        // regenerate QR by saving again with same ID
-        return service.saveSmartPlug(existing);
-    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSmartPlug(@PathVariable String id) {

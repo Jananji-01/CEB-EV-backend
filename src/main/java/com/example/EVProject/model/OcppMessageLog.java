@@ -40,12 +40,14 @@
 package com.example.EVProject.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Data
 @Entity
 @Table(name = "OCPP_MESSAGE_LOG")  // make sure table name matches Oracle
 public class OcppMessageLog {

@@ -56,6 +56,7 @@
 package com.example.EVProject.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -63,6 +64,7 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
+@Data
 @Entity
 @Table(name = "CHARGING_STATION")
 public class ChargingStation {

@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.OffsetDateTime;
 
 @Entity
+@Data
 @Table(
         name = "monthly_consumption",
         uniqueConstraints = @UniqueConstraint(columnNames = {"username", "id_device", "month", "year"})

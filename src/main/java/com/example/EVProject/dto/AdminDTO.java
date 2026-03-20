@@ -1,9 +1,14 @@
 package com.example.EVProject.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import jakarta.validation.constraints.*;
+import lombok.NoArgsConstructor;
+
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdminDTO {
     private Integer adminId;
 
