@@ -77,5 +77,5 @@ public class RooftopSolarOwner {
     @JoinColumn(name = "username", referencedColumnName = "username", insertable = false, updatable = false)
     private User user;
 
-    // getters and setters
+    
 }
