@@ -792,9 +792,6 @@
 //    }
 //
 //}
-
-
-
 package com.example.EVProject.controllers;
 
 import com.example.EVProject.dto.ChargingStationDTO;
@@ -991,7 +988,7 @@ public class ChargingStationController {
         }
     }
 
-   /*  @PostMapping("/heartbeat")
+    @PostMapping("/heartbeat")
     public ResponseEntity<?> handleHeartbeat(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
@@ -1053,9 +1050,9 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
         }
-    }*/
+    }
 
-   /*  @PostMapping("/authorize")
+     @PostMapping("/authorize")
     public ResponseEntity<?> handleAuthorize(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
@@ -1178,7 +1175,7 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
         }
-    }*/
+    }
 
     // @PostMapping("/startTransaction")
     // public ResponseEntity<?> handleStartTransaction(
@@ -1312,67 +1309,86 @@ public class ChargingStationController {
     //     };
     // }
 
-@PostMapping("/startTransaction")
-public ResponseEntity<?> handleStartTransaction(
-        @RequestBody String rawBody,
-        @RequestHeader("IdDevice") String headerIdDevice) {
+    @PostMapping("/startTransaction")
+        public ResponseEntity<?> handleStartTransaction(
+                @RequestBody String rawBody,
+                @RequestHeader("IdDevice") String headerIdDevice) {
 
-    try {
-        // 1️⃣ Parse OCPP message
-        var parsed = OcppMessageParser.parse(rawBody);
-        if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Invalid message type or action. Expected StartTransaction"));
+            LocalDateTime receivedAt = LocalDateTime.now();
+
+            try {
+                var parsed = OcppMessageParser.parse(rawBody);
+
+                if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(Map.of("error", "Invalid message type or action. Expected StartTransaction"));
+                }
+
+                var payload = parsed.payload();
+
+                String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
+
+                if (idTag == null || idTag.isEmpty()) {
+                    Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+                    Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+                    return ResponseEntity.ok(ocppResponse);
+                }
+
+                Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag);
+                String status = tagOpt.map(IdTagInfo::getStatus).orElse("Invalid");
+
+                Map<String, Object> idTagInfo = Map.of("status", status);
+                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+
+                // ✅ ADD THIS BLOCK (LOGGING)
+                OcppMessageLog log = new OcppMessageLog();
+                log.setIdDevice(headerIdDevice);
+                log.setMessageId(parsed.messageId());
+                log.setAction(parsed.action());
+                log.setMessageTypeId(parsed.messageTypeId());
+                log.setPayload(payload.toString());
+
+                ObjectMapper mapper = new ObjectMapper();
+                log.setResponse(mapper.writeValueAsString(ocppResponse));
+
+                log.setReceivedAt(receivedAt);
+                log.setRespondedAt(LocalDateTime.now());
+
+                messageLogRepo.save(log);
+                // ✅ END
+
+                return ResponseEntity.ok(ocppResponse);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
+            }
         }
 
-        // 2️⃣ Extract idTag
-        var payload = parsed.payload();
-        String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
-        if (idTag == null || idTag.isEmpty()) {
-            Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-            Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-            return ResponseEntity.ok(ocppResponse);
+        private String generateIdTag(String baseValue) {
+            try {
+                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+                byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
+                String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+                return "IDT-" + hex.substring(0, 8).toUpperCase();
+            } catch (Exception e) {
+                throw new RuntimeException("Error generating IdTag", e);
+            }
         }
 
-        // 3️⃣ Fetch status from database
-        Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag); // just find by idTag
-        String status = tagOpt.map(IdTagInfo::getStatus).orElse("Invalid");
-
-        // 4️⃣ Return only STATUS
-        Map<String, Object> idTagInfo = Map.of("status", status);
-        Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-        return ResponseEntity.ok(ocppResponse);
-
-    } catch (Exception e) {
-        e.printStackTrace();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
-    }
-}
-
-    private String generateIdTag(String baseValue) {
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
-            String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-            return "IDT-" + hex.substring(0, 8).toUpperCase();
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating IdTag", e);
+        private Integer mapStatusStringToCode(String status) {
+            return switch (status) {
+                case "Available" -> 1;
+                case "Preparing" -> 2;
+                case "Charging" -> 3;
+                case "Finishing" -> 4;
+                case "Unavailable" -> 5;
+                default -> throw new IllegalArgumentException("Unknown status: " + status);
+            };
         }
-    }
 
-    private Integer mapStatusStringToCode(String status) {
-        return switch (status) {
-            case "Available" -> 1;
-            case "Preparing" -> 2;
-            case "Charging" -> 3;
-            case "Finishing" -> 4;
-            case "Unavailable" -> 5;
-            default -> throw new IllegalArgumentException("Unknown status: " + status);
-        };
-    }
-
-    /*@PostMapping("/stopTransaction")
+    @PostMapping("/stopTransaction")
     public ResponseEntity<?> handleStopTransaction(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
@@ -1402,7 +1418,7 @@ public ResponseEntity<?> handleStartTransaction(
 
             // ✅ Check session existence
             var sessionOpt = chargingSessionService.getSessionById(transactionId);
-            if (sessionOpt == null) {
+            if (sessionOpt == null || sessionOpt.getSessionId() == null) {
                 Map<String, Object> idTagInfo = Map.of("status", "Invalid");
                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
                 return ResponseEntity.ok(ocppResponse);
@@ -1498,9 +1514,9 @@ public ResponseEntity<?> handleStartTransaction(
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
-    }*/
+    }
 
-    /*@PostMapping("/bootNotification")
+    @PostMapping("/bootNotification")
     public ResponseEntity<?> handleBootNotification(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
@@ -1586,6 +1602,6 @@ public ResponseEntity<?> handleStartTransaction(
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
-    }*/
+    }
 
 }

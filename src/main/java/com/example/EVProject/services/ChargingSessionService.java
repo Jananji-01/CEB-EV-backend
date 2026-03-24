@@ -121,7 +121,7 @@ public class ChargingSessionService {
         session.setTotalConsumption(0.0);
         session.setAmount(0.0);
         session.setSoc(0.0);
-        session.setEvOwnerAccountNo(evOwnerAccountNo);   
+        session.setEvOwnerAccountNo(evOwnerAccountNo);
 
         // 3️⃣ Save the new session
         ChargingSession savedSession = repository.save(session);
