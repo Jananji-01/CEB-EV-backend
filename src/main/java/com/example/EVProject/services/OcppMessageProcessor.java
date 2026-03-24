@@ -80,14 +80,14 @@ public class OcppMessageProcessor {
      * Handle OCPP CALL messages (device → server)
      */
     private String handleCall(String deviceId, String messageId, String action, JsonNode payload) {
-        ObjectNode responsePayload;
+        ObjectNode responsePayload = objectMapper.createObjectNode();
 
         switch (action) {
             case "BootNotification":
                 responsePayload = handleBootNotification(deviceId, payload);
                 break;
             case "Authorize":
-                responsePayload = handleAuthorize(deviceId, payload);
+                handleAuthorize(deviceId, payload, messageId);
                 break;
             case "StartTransaction":
                 responsePayload = handleStartTransaction(deviceId, payload);
@@ -160,51 +160,112 @@ public class OcppMessageProcessor {
      * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
      * Does NOT create a new record – that is done only during QR scan.
      */
-    private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
-        ObjectNode response = objectMapper.createObjectNode();
+    // private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
+    //     ObjectNode response = objectMapper.createObjectNode();
+    //     ObjectNode idTagInfo = objectMapper.createObjectNode();
+
+    //     try {
+    //         String deviceIdFromPayload = payload.path("IdDevice").asText();
+            
+    //         // Validate device ID
+    //         if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
+    //             idTagInfo.put("status", "Invalid");
+    //             System.err.println("❌ Authorize: missing IdDevice in payload");
+    //         } else if (!deviceId.equals(deviceIdFromPayload)) {
+    //             idTagInfo.put("status", "Invalid");
+    //             System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
+    //         } else {
+    //             LocalDateTime now = LocalDateTime.now();
+    //             var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
+
+    //             if (tagOpt.isPresent()) {
+    //                 IdTagInfo tag = tagOpt.get();
+    //                 if (tag.getExpiryDate().isAfter(now)) {
+    //                     // Valid record found
+    //                     idTagInfo.put("status", "Accepted");
+    //                     idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
+    //                     idTagInfo.put("IdTag", tag.getIdTag());
+    //                     System.out.println("✅ Authorize: returning idTag " + tag.getIdTag() + " for device " + deviceId);
+    //                 } else {
+    //                     // Record expired
+    //                     idTagInfo.put("status", "Invalid");
+    //                     System.out.println("⚠️ Authorize: latest IdTagInfo expired for device " + deviceId);
+    //                 }
+    //             } else {
+    //                 // No record at all
+    //                 idTagInfo.put("status", "Invalid");
+    //                 System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
+    //             }
+    //         }
+    //     } catch (Exception e) {
+    //         idTagInfo.put("status", "Invalid");
+    //         System.err.println("❌ Authorize error for device " + deviceId + ": " + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+
+    //     response.set("idTagInfo", idTagInfo);
+    //     return response;
+    // }
+
+    private Object[] handleAuthorize(String deviceId, JsonNode payload, String messageId) {
+
         ObjectNode idTagInfo = objectMapper.createObjectNode();
 
         try {
             String deviceIdFromPayload = payload.path("IdDevice").asText();
-            
-            // Validate device ID
+
+            // 1️⃣ Validate payload IdDevice
             if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
-                System.err.println("❌ Authorize: missing IdDevice in payload");
+
             } else if (!deviceId.equals(deviceIdFromPayload)) {
                 idTagInfo.put("status", "Invalid");
-                System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
-            } else {
-                LocalDateTime now = LocalDateTime.now();
-                var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
 
-                if (tagOpt.isPresent()) {
-                    IdTagInfo tag = tagOpt.get();
-                    if (tag.getExpiryDate().isAfter(now)) {
-                        // Valid record found
-                        idTagInfo.put("status", "Accepted");
-                        idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
-                        idTagInfo.put("IdTag", tag.getIdTag());
-                        System.out.println("✅ Authorize: returning idTag " + tag.getIdTag() + " for device " + deviceId);
-                    } else {
-                        // Record expired
-                        idTagInfo.put("status", "Invalid");
-                        System.out.println("⚠️ Authorize: latest IdTagInfo expired for device " + deviceId);
+            } else {
+
+                LocalDateTime now = LocalDateTime.now();
+
+                List<IdTagInfo> existingTags =
+                        idTagInfoRepository.findByIdDevice(deviceIdFromPayload);
+
+                IdTagInfo validTag = null;
+
+                // 2️⃣ find valid (non-expired) tag
+                for (IdTagInfo tag : existingTags) {
+                    if (tag.getExpiryDate() != null &&
+                            tag.getExpiryDate().isAfter(now)) {
+                        validTag = tag;
+                        break;
                     }
+                }
+
+                if (validTag != null) {
+
+                    // ✅ reuse existing valid tag
+                    idTagInfo.put("status", "Accepted");
+                    idTagInfo.put("expiryDate", validTag.getExpiryDate().toString() + "Z");
+                    idTagInfo.put("IdTag", validTag.getIdTag());
+
                 } else {
-                    // No record at all
+
+                    // ❌ no valid tag
                     idTagInfo.put("status", "Invalid");
-                    System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
                 }
             }
+
         } catch (Exception e) {
             idTagInfo.put("status", "Invalid");
-            System.err.println("❌ Authorize error for device " + deviceId + ": " + e.getMessage());
-            e.printStackTrace();
         }
 
-        response.set("idTagInfo", idTagInfo);
-        return response;
+        ObjectNode payloadNode = objectMapper.createObjectNode();
+        payloadNode.set("idTagInfo", idTagInfo);
+
+        // ✅ SAME OCPP FORMAT AS CONTROLLER
+        return new Object[]{
+                3,
+                messageId,
+                payloadNode
+        };
     }
 
     /**
@@ -522,10 +583,6 @@ public class OcppMessageProcessor {
                 // This would be implemented similarly to MeterValues
             }
 
-            // Use server time
-            LocalDateTime endTime = LocalDateTime.now();
-            System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
-
             // Calculate duration
             // USE SERVER TIME instead of device timestamp
             LocalDateTime endTime = LocalDateTime.now();
@@ -678,68 +735,6 @@ public class OcppMessageProcessor {
             return "IDT-" + hex.substring(0, 8).toUpperCase();
         } catch (Exception e) {
             return "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        }
-    }
-
-    /**
-     * Send meter values to frontend via STOMP
-     */
-    private void sendMeterValueToFrontend(Map<String, Object> meterData) {
-        try {
-            String deviceId = (String) meterData.get("idDevice");
-            if (deviceId == null) {
-                System.err.println("❌ Cannot send meter data: deviceId is null");
-                return;
-            }
-
-            Map<String, Object> frontendMessage = new HashMap<>();
-            frontendMessage.put("type", "METER_VALUES");
-            frontendMessage.put("idDevice", deviceId);
-            frontendMessage.put("timestamp", meterData.get("timestamp"));
-
-            List<Map<String, Object>> sampledValues = new ArrayList<>();
-
-            if (meterData.containsKey("power")) {
-                Map<String, Object> powerSample = new HashMap<>();
-                powerSample.put("value", meterData.get("power").toString());
-                powerSample.put("measurand", "Power.Active.Import");
-                powerSample.put("unit", "kW");
-                sampledValues.add(powerSample);
-            }
-
-            if (meterData.containsKey("voltage")) {
-                Map<String, Object> voltageSample = new HashMap<>();
-                voltageSample.put("value", meterData.get("voltage").toString());
-                voltageSample.put("measurand", "Voltage");
-                voltageSample.put("unit", "V");
-                sampledValues.add(voltageSample);
-            }
-
-            if (meterData.containsKey("current")) {
-                Map<String, Object> currentSample = new HashMap<>();
-                currentSample.put("value", meterData.get("current").toString());
-                currentSample.put("measurand", "Current.Import");
-                currentSample.put("unit", "A");
-                sampledValues.add(currentSample);
-            }
-
-            if (meterData.containsKey("energy")) {
-                Map<String, Object> energySample = new HashMap<>();
-                energySample.put("value", meterData.get("energy").toString());
-                energySample.put("measurand", "Energy.Active.Import.Register");
-                energySample.put("unit", "kWh");
-                sampledValues.add(energySample);
-            }
-
-            Map<String, Object> meterValueObj = new HashMap<>();
-            meterValueObj.put("sampledValue", sampledValues);
-            frontendMessage.put("meterValue", meterValueObj);
-
-            messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
-            messagingTemplate.convertAndSend("/topic/charging", frontendMessage);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error sending meter data to frontend: " + e.getMessage());
         }
     }
 

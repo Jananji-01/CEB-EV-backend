@@ -21,7 +21,6 @@ import java.util.Optional;
 
 public interface SmartPlugRepository extends JpaRepository<SmartPlug, String> {
 
-    Optional<SmartPlug> findFirstByCebSerialNo(String cebSerialNo);
 
     @Query(value = """
         SELECT * FROM (
