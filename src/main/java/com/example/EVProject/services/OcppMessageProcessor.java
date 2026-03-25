@@ -207,64 +207,87 @@ public class OcppMessageProcessor {
     //     return response;
     // }
 
+    /**
+     * 2. Authorize Handler – matches REST API response format
+     * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
+     * Creates a new IdTag if no valid one exists.
+     */
     private Object[] handleAuthorize(String deviceId, JsonNode payload, String messageId) {
-
         ObjectNode idTagInfo = objectMapper.createObjectNode();
 
         try {
             String deviceIdFromPayload = payload.path("IdDevice").asText();
-
+            
             // 1️⃣ Validate payload IdDevice
             if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
-
+                System.err.println("❌ Authorize: missing IdDevice in payload");
             } else if (!deviceId.equals(deviceIdFromPayload)) {
                 idTagInfo.put("status", "Invalid");
-
+                System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
             } else {
-
                 LocalDateTime now = LocalDateTime.now();
-
-                List<IdTagInfo> existingTags =
-                        idTagInfoRepository.findByIdDevice(deviceIdFromPayload);
-
+                
+                // 2️⃣ Find valid (non-expired) tag
+                List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(deviceIdFromPayload);
                 IdTagInfo validTag = null;
-
-                // 2️⃣ find valid (non-expired) tag
+                
                 for (IdTagInfo tag : existingTags) {
-                    if (tag.getExpiryDate() != null &&
-                            tag.getExpiryDate().isAfter(now)) {
+                    if (tag.getExpiryDate() != null && tag.getExpiryDate().isAfter(now)) {
                         validTag = tag;
                         break;
                     }
                 }
-
+                
                 if (validTag != null) {
-
-                    // ✅ reuse existing valid tag
+                    // ✅ Reuse existing valid tag - same as REST API
                     idTagInfo.put("status", "Accepted");
                     idTagInfo.put("expiryDate", validTag.getExpiryDate().toString() + "Z");
                     idTagInfo.put("IdTag", validTag.getIdTag());
-
+                    System.out.println("✅ Authorize: reusing idTag " + validTag.getIdTag() + " for device " + deviceId);
+                    
                 } else {
-
-                    // ❌ no valid tag
-                    idTagInfo.put("status", "Invalid");
+                    // ❌ No valid tag found - create new one (same as REST API)
+                    SmartPlug plug = smartPlugRepository.findById(deviceIdFromPayload)
+                            .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + deviceIdFromPayload));
+                    
+                    String accountReference = (plug.getCebSerialNo() != null)
+                            ? plug.getCebSerialNo()
+                            : plug.getIdDevice();
+                    
+                    String idTag = generateIdTag(accountReference);
+                    LocalDateTime expiryDate = now.plusHours(6); // 6 hours expiry
+                    
+                    // Create and save new IdTagInfo record
+                    IdTagInfo newTag = new IdTagInfo();
+                    newTag.setIdDevice(deviceIdFromPayload);
+                    newTag.setIdTag(idTag);
+                    newTag.setStatus("Accepted");
+                    newTag.setExpiryDate(expiryDate);
+                    newTag.setCreatedAt(now);
+                    idTagInfoRepository.save(newTag);
+                    
+                    // Build response
+                    idTagInfo.put("status", "Accepted");
+                    idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
+                    idTagInfo.put("IdTag", idTag);
+                    System.out.println("✅ Authorize: created new idTag " + idTag + " for device " + deviceId);
                 }
             }
-
         } catch (Exception e) {
             idTagInfo.put("status", "Invalid");
+            System.err.println("❌ Authorize error for device " + deviceId + ": " + e.getMessage());
+            e.printStackTrace();
         }
 
+        // Build OCPP response in the exact format your REST API uses
         ObjectNode payloadNode = objectMapper.createObjectNode();
         payloadNode.set("idTagInfo", idTagInfo);
-
-        // ✅ SAME OCPP FORMAT AS CONTROLLER
+        
         return new Object[]{
-                3,
-                messageId,
-                payloadNode
+                3,                    // MessageTypeId for CALLRESULT
+                messageId,            // Message ID
+                payloadNode           // Payload with idTagInfo
         };
     }
 
