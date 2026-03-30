@@ -13,6 +13,7 @@ public class ChargingStationDTO {
     private Integer stationId;
     private Double latitude;
     private Double longitude;
+    private String stationName;
     private Double solarPowerAvailable;
     private String status;
     private String errorCode;

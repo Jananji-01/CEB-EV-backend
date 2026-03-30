@@ -194,7 +194,7 @@ public class ChargingStationController {
         }
     }
 
-    @PostMapping("/heartbeat")
+   /*  @PostMapping("/heartbeat")
     public ResponseEntity<?> handleHeartbeat(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
@@ -256,9 +256,9 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
         }
-    }
+    }*/
 
-    @PostMapping("/authorize")
+   /*  @PostMapping("/authorize")
     public ResponseEntity<?> handleAuthorize(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
@@ -370,9 +370,9 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
         }
-    }
+    }*/
 
-    @PostMapping("/startTransaction")
+    /*@PostMapping("/startTransaction")
     public ResponseEntity<?> handleStartTransaction(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
@@ -480,7 +480,7 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
-    }
+    }*/
 
     private String generateIdTag(String baseValue) {
         try {
@@ -504,7 +504,7 @@ public class ChargingStationController {
         };
     }
 
-    @PostMapping("/stopTransaction")
+    /*@PostMapping("/stopTransaction")
     public ResponseEntity<?> handleStopTransaction(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
@@ -630,9 +630,9 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
-    }
+    }*/
 
-    @PostMapping("/bootNotification")
+    /*@PostMapping("/bootNotification")
     public ResponseEntity<?> handleBootNotification(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
@@ -718,6 +718,6 @@ public class ChargingStationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
-    }
+    }*/
 
 }

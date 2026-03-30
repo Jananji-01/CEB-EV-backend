@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 public class DeviceRegistry {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "device_registry_seq")
+    @SequenceGenerator(name = "device_registry_seq", sequenceName = "DEVICE_REGISTRY_SEQ", allocationSize = 1)
     private Integer id;
 
     @Column(name = "id_device", unique = true, nullable = false)

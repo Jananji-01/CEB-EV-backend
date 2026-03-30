@@ -1,84 +1,3 @@
-//package com.example.EVProject.services;
-//
-//import com.example.EVProject.dto.UserDTO;
-//import com.example.EVProject.model.User;
-//import com.example.EVProject.repositories.UserRepository;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.security.crypto.password.PasswordEncoder;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-//
-//import java.util.List;
-//import java.util.Optional;
-//
-//@Service
-//@Transactional
-//public class UserService {
-//
-//    @Autowired
-//    private UserRepository userRepository;
-//
-//    @Autowired
-//    private PasswordEncoder passwordEncoder;
-//
-//    public List<User> getAllUsers() {
-//        return userRepository.findAll();
-//    }
-//
-//    public Optional<User> getUserByUsername(String username) {
-//        return userRepository.findById(username);
-//    }
-//
-//    public Optional<User> getUserByEmail(String email) {
-//        return userRepository.findByEmail(email);
-//    }
-//
-//    public User createUser(UserDTO userDTO) {
-//        if (userRepository.existsByUsername(userDTO.getUsername())) {
-//            throw new RuntimeException("Username already exists");
-//        }
-//        if (userRepository.existsByEmail(userDTO.getEmail())) {
-//            throw new RuntimeException("Email already exists");
-//        }
-//
-//        User user = new User();
-//        user.setUsername(userDTO.getUsername());
-//        user.setEmail(userDTO.getEmail());
-//        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-//
-//        return userRepository.save(user);
-//    }
-//
-//    public User updateUser(String username, UserDTO userDTO) {
-//        User user = userRepository.findById(username)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        if (!user.getEmail().equals(userDTO.getEmail()) &&
-//                userRepository.existsByEmail(userDTO.getEmail())) {
-//            throw new RuntimeException("Email already exists");
-//        }
-//
-//        user.setEmail(userDTO.getEmail());
-//        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
-//            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-//        }
-//
-//        return userRepository.save(user);
-//    }
-//
-//    public void deleteUser(String username) {
-//        if (!userRepository.existsById(username)) {
-//            throw new RuntimeException("User not found");
-//        }
-//        userRepository.deleteById(username);
-//    }
-//
-//    public boolean authenticateUser(String username, String password) {
-//        Optional<User> user = userRepository.findById(username);
-//        return user.isPresent() && passwordEncoder.matches(password, user.get().getPassword());
-//    }
-//}
-
 package com.example.EVProject.services;
 
 import com.example.EVProject.dto.RegistrationRequest;
@@ -91,19 +10,17 @@ import com.example.EVProject.repositories.RoleRepository;
 import com.example.EVProject.repositories.RooftopSolarOwnerRepository;
 import com.example.EVProject.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -125,15 +42,9 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService; // ✅ Email sender service
+    private EmailService emailService;
 
-   // @Autowired
-    //private RedisTemplate<String, String> redisTemplate; // ✅ Redis for OTP
-
-//    @Autowired
-//    private RedisOtpService redisOtpService;
-
-    private final int otpExpiryMinutes = 10; // OTP expiry time
+    private final int otpExpiryMinutes = 10;
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -148,7 +59,6 @@ public class UserService {
     }
 
     public User createUser(RegistrationRequest req) {
-        // Check if username or email exists
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
@@ -156,15 +66,13 @@ public class UserService {
             throw new RuntimeException("Email already exists");
         }
 
-        // 1️⃣ Create User entity
         User user = new User();
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setEAccountNumber(req.getE_account_number());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
-        user.setEnabled(false); // Until OTP verified
+        user.setEnabled(false);
 
-        // Assign role
         Role roleEntity = roleRepository.findByName("ROLE_" + req.getRole().toUpperCase())
                 .orElseThrow(() -> new RuntimeException("Role not found"));
         user.setRoles(Collections.singleton(roleEntity));
@@ -173,7 +81,6 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        // 2️⃣ Handle role-specific tables
         switch (req.getRole().toUpperCase()) {
             case "EVOWNER":
                 EvOwner evOwner = new EvOwner();
@@ -181,9 +88,11 @@ public class UserService {
                 evOwner.setEAccountNumber(req.getE_account_number());
                 evOwner.setMobileNumber(req.getMobile_number());
                 evOwner.setNoOfVehiclesOwned(req.getNo_of_vehicles_owned());
+                // Generate unique ID tag
+                String idTag = "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                evOwner.setIdTag(idTag);
                 evOwnerRepository.save(evOwner);
                 break;
-
             case "SOLAROWNER":
                 RooftopSolarOwner solarOwner = new RooftopSolarOwner();
                 solarOwner.setAddress(req.getAddress());
@@ -191,35 +100,15 @@ public class UserService {
                 solarOwner.setMobileNumber(req.getMobile_number());
                 solarOwner.setPanelCapacity(req.getSolarCapacity());
                 solarOwner.setUsername(savedUser.getUsername());
-
                 rooftopSolarOwnerRepository.save(solarOwner);
                 break;
-
-            // USER or ADMIN: no extra table insert
             default:
                 break;
         }
 
-
-        // 3️⃣ Generate OTP and send email
         generateAndSendOtp(savedUser);
-
         return savedUser;
     }
-
-
-//    private void generateAndSendOtpRedis(User user) {
-//        // Generate 6-digit OTP
-//        Random rnd = new Random();
-//        int num = 100000 + rnd.nextInt(900000);
-//        String otp = String.valueOf(num);
-//
-//        // Store OTP in Redis with expiry
-//        redisOtpService.storeOtp(user.getUsername(), otp, otpExpiryMinutes);
-//
-//        // Send OTP email
-//        emailService.sendOtpEmail(user.getEmail(), otp);
-//    }
 
     public User updateUser(String username, RegistrationRequest userDTO) {
         User user = userRepository.findById(username)
@@ -248,39 +137,28 @@ public class UserService {
     public boolean authenticateUser(String username, String password) {
         Optional<User> user = userRepository.findById(username);
         return user.isPresent()
-                && user.get().getEnabled() // only verified accounts
+                && user.get().getEnabled()
                 && passwordEncoder.matches(password, user.get().getPassword());
     }
 
-    // ==============================
-    // 🔑 OTP methods (Redis version)
-    // ==============================
+    // ========== OTP methods ==========
 
     private void generateAndSendOtp(User user) {
         String otp = generateOtp();
-        //String key = "OTP:" + user.getUsername();
         user.setLastOtp(otp);
-        user.setOtpExpiry(OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(otpExpiryMinutes));
-        // store OTP in Redis with expiry
-        //redisTemplate.opsForValue().set(key, otp, otpExpiryMinutes, TimeUnit.MINUTES);
-
+        // Store expiry in UTC
+        user.setOtpExpiry(LocalDateTime.now(ZoneOffset.UTC).plusMinutes(otpExpiryMinutes));
         userRepository.save(user);
-        // send OTP via email
         emailService.sendOtpEmail(user.getEmail(), otp);
     }
 
     private String generateOtp() {
         Random rnd = new Random();
-        int num = 100000 + rnd.nextInt(900000); // 6-digit OTP
+        int num = 100000 + rnd.nextInt(900000);
         return String.valueOf(num);
     }
 
     public boolean verifyOtp(String username, String otp) {
-//        String key = "OTP:" + username;
-//        String storedOtp = redisTemplate.opsForValue().get(key);
-//
-
-        // OTP valid → enable account
         User user = userRepository.findById(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -290,15 +168,12 @@ public class UserService {
         if (!user.getLastOtp().equals(otp)) {
             return false;
         }
-        if (user.getOtpExpiry().isBefore(OffsetDateTime.now(ZoneOffset.UTC))) {
+        // Compare with current UTC time
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             return false;
         }
         user.setEnabled(true);
         userRepository.save(user);
-
-//        // remove OTP from Redis (one-time use)
-//        redisTemplate.delete(key);
-
         emailService.sendWelcomeEmail(user.getEmail());
         return true;
     }
@@ -306,9 +181,6 @@ public class UserService {
     public void resendOtp(String username) {
         User user = userRepository.findById(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         generateAndSendOtp(user);
     }
 }
-
-

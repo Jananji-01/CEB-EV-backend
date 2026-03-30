@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -14,7 +14,7 @@ import java.util.Set;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -48,7 +48,7 @@ public class User {
     private String lastOtp;
 
     @Column(name = "otp_expiry")
-    private OffsetDateTime otpExpiry;
+    private LocalDateTime otpExpiry;
 
     // getters and setters
 

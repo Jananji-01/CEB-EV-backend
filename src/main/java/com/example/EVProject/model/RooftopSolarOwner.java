@@ -11,7 +11,8 @@ import lombok.Setter;
 public class RooftopSolarOwner {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "solar_owner_seq")
+    @SequenceGenerator(name = "solar_owner_seq", sequenceName = "SOLAR_OWNER_SEQ", allocationSize = 1)
     @Column(name = "solar_owner_id")
     private Integer solarOwnerId;
 
@@ -35,5 +36,6 @@ public class RooftopSolarOwner {
     private User user;
 
     // getters and setters
-
+    public String getEAccountNumber() { return eAccountNumber; }
+    public void setEAccountNumber(String eAccountNumber) { this.eAccountNumber = eAccountNumber; }
 }

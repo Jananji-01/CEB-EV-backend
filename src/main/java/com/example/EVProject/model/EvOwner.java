@@ -15,7 +15,8 @@ import lombok.Setter;
 public class EvOwner {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ev_owner_seq")
+    @SequenceGenerator(name = "ev_owner_seq", sequenceName = "EV_OWNER_SEQ", allocationSize = 1)
     @Column(name = "ev_owner_id")
     private Integer evOwnerId;
 
@@ -31,11 +32,16 @@ public class EvOwner {
     @Column(name = "e_account_number")
     private String eAccountNumber;
 
+    @Column(name = "id_tag", unique = true)
+    private String idTag;
+
     @OneToOne
     @JoinColumn(name = "username", referencedColumnName = "username",insertable = false,updatable = false)
     private User user;
 
     // getters and setters
+    public String getIdTag() { return idTag; }
+    public void setIdTag(String idTag) { this.idTag = idTag; }
 
 //    public Integer getEvOwnerId() {
 //        return evOwnerId;

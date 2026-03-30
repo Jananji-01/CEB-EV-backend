@@ -34,6 +34,20 @@ public class ChargingStationService {
         return convertToDto(saved);
     }
 
+    private ChargingStation convertToEntity(ChargingStationDTO dto) {
+        ChargingStation station = new ChargingStation();
+        station.setStationId(dto.getStationId());
+        station.setStationName(dto.getStationName());  
+        station.setLatitude(dto.getLatitude());
+        station.setLongitude(dto.getLongitude());
+        station.setSolarPowerAvailable(dto.getSolarPowerAvailable());
+        station.setStatus(dto.getStatus());
+        station.setErrorCode(dto.getErrorCode());
+        station.setTimestamp(dto.getTimestamp());
+        station.setSolarOwnerId(dto.getSolarOwnerId());
+        return station;
+    }
+
     public void deleteStation(Integer id) {
         repository.deleteById(id);
     }
@@ -78,6 +92,7 @@ public class ChargingStationService {
     private ChargingStationDTO convertToDto(ChargingStation station) {
         ChargingStationDTO dto = new ChargingStationDTO();
         dto.setStationId(station.getStationId());
+        dto.setStationName(station.getStationName());
         dto.setLatitude(station.getLatitude());
         dto.setLongitude(station.getLongitude());
         dto.setSolarPowerAvailable(station.getSolarPowerAvailable());
@@ -86,14 +101,4 @@ public class ChargingStationService {
         return dto;
     }
 
-    private ChargingStation convertToEntity(ChargingStationDTO dto) {
-        ChargingStation station = new ChargingStation();
-        station.setStationId(dto.getStationId());
-        station.setLatitude(dto.getLatitude());
-        station.setLongitude(dto.getLongitude());
-        station.setSolarPowerAvailable(dto.getSolarPowerAvailable());
-        station.setStatus(dto.getStatus());
-        station.setSolarOwnerId(dto.getSolarOwnerId());
-        return station;
-    }
 }
