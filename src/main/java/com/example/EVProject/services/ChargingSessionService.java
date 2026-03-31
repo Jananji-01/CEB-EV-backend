@@ -73,6 +73,17 @@ public class ChargingSessionService {
         dto.setTotalConsumption(session.getTotalConsumption());
         dto.setAmount(session.getAmount());
         dto.setIdDevice(session.getIdDevice());
+        dto.setEvOwnerAccountNo(session.getEvOwnerAccountNo());
+        dto.setMeterStart(session.getMeterStart());
+        dto.setStatus(session.getStatus()); 
+        
+        // Optional: Set status based on endTime
+        if (session.getEndTime() == null) {
+            dto.setStatus("ACTIVE");
+        } else {
+            dto.setStatus("COMPLETED");
+        }
+        
         return dto;
     }
 
@@ -86,6 +97,9 @@ public class ChargingSessionService {
         session.setTotalConsumption(dto.getTotalConsumption());
         session.setAmount(dto.getAmount());
         session.setIdDevice(dto.getIdDevice());
+        session.setEvOwnerAccountNo(dto.getEvOwnerAccountNo());
+        session.setMeterStart(dto.getMeterStart());
+        session.setStatus(dto.getStatus());
         return session;
     }
 
@@ -122,9 +136,18 @@ public class ChargingSessionService {
         session.setAmount(0.0);
         session.setSoc(0.0);
         session.setEvOwnerAccountNo(evOwnerAccountNo);
+        session.setMeterStart(meterStart);
+        session.setStatus("ACTIVE");
+
+        System.out.println("Session created - ID: " + session.getSessionId() + 
+                       ", MeterStart: " + meterStart + 
+                       ", Status: ACTIVE");
+
 
         // 3️⃣ Save the new session
         ChargingSession savedSession = repository.save(session);
+
+        System.out.println("✅ Session created with ID: " + savedSession.getSessionId());
 
         // 4️⃣ Return its session ID (used as transactionId)
         return savedSession.getSessionId();
@@ -144,15 +167,66 @@ public class ChargingSessionService {
 
     @Transactional
     public void endChargingSession(Integer transactionId, Long meterStop, String timestampStr) {
+        System.out.println("=== endChargingSession ===");
+        System.out.println("Transaction ID: " + transactionId);
+        System.out.println("Meter Stop: " + meterStop);
+        System.out.println("Timestamp: " + timestampStr);
+        
         var sessionOpt = repository.findById(transactionId);
         if (sessionOpt.isEmpty()) {
+            System.out.println("❌ Session not found for transactionId: " + transactionId);
             throw new IllegalArgumentException("Session not found for transactionId: " + transactionId);
         }
 
         ChargingSession session = sessionOpt.get();
-        session.setEndTime(LocalDateTime.parse(timestampStr.replace("Z", "")));
-        session.setTotalConsumption((double) (meterStop != null ? meterStop : 0));
-        repository.save(session);
+        System.out.println("Found session: " + session.getSessionId());
+        System.out.println("Current end time: " + session.getEndTime());
+        System.out.println("Current Status: " + session.getStatus());
+        
+        // Parse timestamp or use current time if not provided
+        LocalDateTime endTime;
+        if (timestampStr != null && !timestampStr.isEmpty()) {
+            endTime = LocalDateTime.parse(timestampStr.replace("Z", ""));
+            System.out.println("Using provided timestamp: " + endTime);
+        } else {
+            endTime = LocalDateTime.now();
+            System.out.println("Using current time: " + endTime);
+        }
+        
+        session.setEndTime(endTime);
+        
+        // ✅ Calculate total consumption correctly
+        if (meterStop != null && session.getMeterStart() != null) {
+            double consumption = (double) (meterStop - session.getMeterStart());
+            session.setTotalConsumption(consumption);
+            
+            // Calculate amount based on consumption (example: $0.15 per kWh)
+            double amount = consumption * 0.15;
+            session.setAmount(amount);
+            
+            System.out.println("Meter Start: " + session.getMeterStart());
+            System.out.println("Meter Stop: " + meterStop);
+            System.out.println("Total consumption: " + consumption + " kWh");
+            System.out.println("Amount: $" + String.format("%.2f", amount));
+        } else if (meterStop != null) {
+            // Fallback if meterStart is not available
+            session.setTotalConsumption(meterStop.doubleValue());
+            double amount = meterStop.doubleValue() * 0.15;
+            session.setAmount(amount);
+            System.out.println("⚠️ MeterStart not available, using meterStop as consumption");
+        }
+        
+        // ✅ Set status to COMPLETED
+        session.setStatus("COMPLETED");
+        
+        
+        // Save the updated session
+        ChargingSession savedSession = repository.save(session);
+        System.out.println("✅ Session saved:");
+        System.out.println("   - End Time: " + savedSession.getEndTime());
+        System.out.println("   - Total Consumption: " + savedSession.getTotalConsumption() + " kWh");
+        System.out.println("   - Amount: $" + String.format("%.2f", savedSession.getAmount()));
+        System.out.println("   - Status: " + savedSession.getStatus());
     }
 
 }
