@@ -42,7 +42,10 @@ public class ChargingSession {
     @Column(name = "ev_owner_account_no")
     private String evOwnerAccountNo;
 
-    @Transient
+    @Column(name = "meter_start")
+    private Long meterStart;
+
+    @Column(name="status")
     private String status;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -52,5 +55,11 @@ public class ChargingSession {
     // getters and setters
     public String getEvOwnerAccountNo() { return evOwnerAccountNo; }
     public void setEvOwnerAccountNo(String evOwnerAccountNo) { this.evOwnerAccountNo = evOwnerAccountNo; }
+
+    public Long getMeterStart() { return meterStart; }
+    public void setMeterStart(Long meterStart) { this.meterStart = meterStart; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
 }
