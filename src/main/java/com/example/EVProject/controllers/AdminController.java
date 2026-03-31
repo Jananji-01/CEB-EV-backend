@@ -2,19 +2,22 @@ package com.example.EVProject.controllers;
 
 import com.example.EVProject.dto.AdminDTO;
 import com.example.EVProject.model.Admin;
+import com.example.EVProject.security.JwtUtil;
 import com.example.EVProject.services.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/admins")
 //@CrossOrigin(origins = "*")
 public class AdminController {
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     private AdminService adminService;
@@ -25,36 +28,73 @@ public class AdminController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Admin>> getAllAdmins() {
-        List<Admin> admins = adminService.getAllAdmins();
-        return ResponseEntity.ok(admins);
+    public ResponseEntity<List<AdminDTO>> getAllAdmins() {
+        return ResponseEntity.ok(adminService.getAllAdminsWithEmail());
     }
 
     @GetMapping("/{adminId}")
-    public ResponseEntity<Admin> getAdminById(@PathVariable Integer adminId) {
-        Optional<Admin> admin = adminService.getAdminById(adminId);
-        return admin.map(ResponseEntity::ok)
+    public ResponseEntity<AdminDTO> getAdminById(@PathVariable Integer adminId) {
+        return adminService.getAdminByIdWithEmail(adminId)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+
+//    @PostMapping
+//    public ResponseEntity<Admin> createAdmin(@Valid @RequestBody AdminDTO adminDTO) {
+//        try {
+//            Admin admin = adminService.createAdmin(adminDTO);
+//            return ResponseEntity.ok(admin);
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//    }
+
+    //create admin
     @PostMapping
-    public ResponseEntity<Admin> createAdmin(@Valid @RequestBody AdminDTO adminDTO) {
+    public ResponseEntity<?> createAdmin(@Valid @RequestBody AdminDTO adminDTO) {
         try {
             Admin admin = adminService.createAdmin(adminDTO);
-            return ResponseEntity.ok(admin);
+
+            // ✅ Set roles for JWT
+            Set<String> roles = new HashSet<>();
+            roles.add("ROLE_ADMIN");
+
+            // ✅ Generate token
+            String token = jwtUtil.generateToken(admin.getUsername(), roles);
+
+            return ResponseEntity.ok().body(
+                    Map.of(
+                            "message", "Admin created successfully",
+                            "token", token
+                    )
+            );
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/{adminId}")
-    public ResponseEntity<Admin> updateAdmin(@PathVariable Integer adminId,
-                                             @Valid @RequestBody AdminDTO adminDTO) {
+    public ResponseEntity<AdminDTO> updateAdmin(
+            @PathVariable Integer adminId,
+            @Valid @RequestBody AdminDTO adminDTO) {
         try {
-            Admin admin = adminService.updateAdmin(adminId, adminDTO);
-            return ResponseEntity.ok(admin);
+            Admin updatedAdmin = adminService.updateAdmin(adminId, adminDTO);
+
+            AdminDTO responseDTO = new AdminDTO();
+            responseDTO.setAdminId(updatedAdmin.getAdminId());
+            responseDTO.setUsername(updatedAdmin.getUsername());
+            if (updatedAdmin.getUser() != null) {
+                responseDTO.setEmail(updatedAdmin.getUser().getEmail());
+            }
+
+            // Do not include password
+            responseDTO.setPassword(null);
+
+            return ResponseEntity.ok(responseDTO);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -66,5 +106,10 @@ public class AdminController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "Admin API working";
     }
 }
