@@ -42,7 +42,14 @@ public class ChargingSession {
     @Column(name = "ev_owner_account_no")
     private String evOwnerAccountNo;
 
+<<<<<<< HEAD
     @Transient
+=======
+    @Column(name = "meter_start")
+    private Long meterStart;
+
+    @Column(name="status")
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     private String status;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -53,4 +60,13 @@ public class ChargingSession {
     public String getEvOwnerAccountNo() { return evOwnerAccountNo; }
     public void setEvOwnerAccountNo(String evOwnerAccountNo) { this.evOwnerAccountNo = evOwnerAccountNo; }
 
+<<<<<<< HEAD
+=======
+    public Long getMeterStart() { return meterStart; }
+    public void setMeterStart(Long meterStart) { this.meterStart = meterStart; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 }
