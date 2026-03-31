@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 // package com.example.EVProject.services;
 
 // import com.example.EVProject.model.*;
@@ -813,6 +815,7 @@
 //     }
 // }
 
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 package com.example.EVProject.services;
 
 import com.example.EVProject.model.*;
@@ -851,8 +854,11 @@ public class OcppMessageProcessor {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+<<<<<<< HEAD
+=======
     // OcppWebSocketService is no longer used – removed
 
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -897,14 +903,22 @@ public class OcppMessageProcessor {
      * Handle OCPP CALL messages (device → server)
      */
     private String handleCall(String deviceId, String messageId, String action, JsonNode payload) {
+<<<<<<< HEAD
+        ObjectNode responsePayload = objectMapper.createObjectNode();
+=======
         ObjectNode responsePayload;
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 
         switch (action) {
             case "BootNotification":
                 responsePayload = handleBootNotification(deviceId, payload);
                 break;
             case "Authorize":
+<<<<<<< HEAD
+                handleAuthorize(deviceId, payload, messageId);
+=======
                 responsePayload = handleAuthorize(deviceId, payload);
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
                 break;
             case "StartTransaction":
                 responsePayload = handleStartTransaction(deviceId, payload);
@@ -935,12 +949,24 @@ public class OcppMessageProcessor {
     }
 
     /**
+<<<<<<< HEAD
+     * 1. BootNotification Handler - Matches REST API format
+=======
      * 1. BootNotification Handler
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
      */
     private ObjectNode handleBootNotification(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
 
         try {
+<<<<<<< HEAD
+            // Extract payload fields
+            String model = payload.has("chargePointModel") ? payload.get("chargePointModel").asText() : null;
+            String vendor = payload.has("chargePointVendor") ? payload.get("chargePointVendor").asText() : null;
+            String firmware = payload.has("firmwareVersion") ? payload.get("firmwareVersion").asText() : null;
+
+=======
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             // Update device information
             SmartPlug plug = smartPlugRepository.findById(deviceId)
                     .orElseGet(() -> {
@@ -972,12 +998,73 @@ public class OcppMessageProcessor {
      * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
      * Does NOT create a new record – that is done only during QR scan.
      */
+<<<<<<< HEAD
+    // private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
+    //     ObjectNode response = objectMapper.createObjectNode();
+    //     ObjectNode idTagInfo = objectMapper.createObjectNode();
+
+    //     try {
+    //         String deviceIdFromPayload = payload.path("IdDevice").asText();
+            
+    //         // Validate device ID
+    //         if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
+    //             idTagInfo.put("status", "Invalid");
+    //             System.err.println("❌ Authorize: missing IdDevice in payload");
+    //         } else if (!deviceId.equals(deviceIdFromPayload)) {
+    //             idTagInfo.put("status", "Invalid");
+    //             System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
+    //         } else {
+    //             LocalDateTime now = LocalDateTime.now();
+    //             var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
+
+    //             if (tagOpt.isPresent()) {
+    //                 IdTagInfo tag = tagOpt.get();
+    //                 if (tag.getExpiryDate().isAfter(now)) {
+    //                     // Valid record found
+    //                     idTagInfo.put("status", "Accepted");
+    //                     idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
+    //                     idTagInfo.put("IdTag", tag.getIdTag());
+    //                     System.out.println("✅ Authorize: returning idTag " + tag.getIdTag() + " for device " + deviceId);
+    //                 } else {
+    //                     // Record expired
+    //                     idTagInfo.put("status", "Invalid");
+    //                     System.out.println("⚠️ Authorize: latest IdTagInfo expired for device " + deviceId);
+    //                 }
+    //             } else {
+    //                 // No record at all
+    //                 idTagInfo.put("status", "Invalid");
+    //                 System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
+    //             }
+    //         }
+    //     } catch (Exception e) {
+    //         idTagInfo.put("status", "Invalid");
+    //         System.err.println("❌ Authorize error for device " + deviceId + ": " + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+
+    //     response.set("idTagInfo", idTagInfo);
+    //     return response;
+    // }
+
+    /**
+     * 2. Authorize Handler – matches REST API response format
+     * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
+     * Creates a new IdTag if no valid one exists.
+     */
+    private Object[] handleAuthorize(String deviceId, JsonNode payload, String messageId) {
+=======
     private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
         ObjectNode idTagInfo = objectMapper.createObjectNode();
 
         try {
             String deviceIdFromPayload = payload.path("IdDevice").asText();
+<<<<<<< HEAD
+            
+            // 1️⃣ Validate payload IdDevice
+=======
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
                 System.err.println("❌ Authorize: missing IdDevice in payload");
@@ -986,6 +1073,53 @@ public class OcppMessageProcessor {
                 System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
             } else {
                 LocalDateTime now = LocalDateTime.now();
+<<<<<<< HEAD
+                
+                // 2️⃣ Find valid (non-expired) tag
+                List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(deviceIdFromPayload);
+                IdTagInfo validTag = null;
+                
+                for (IdTagInfo tag : existingTags) {
+                    if (tag.getExpiryDate() != null && tag.getExpiryDate().isAfter(now)) {
+                        validTag = tag;
+                        break;
+                    }
+                }
+                
+                if (validTag != null) {
+                    // ✅ Reuse existing valid tag - same as REST API
+                    idTagInfo.put("status", "Accepted");
+                    idTagInfo.put("expiryDate", validTag.getExpiryDate().toString() + "Z");
+                    idTagInfo.put("IdTag", validTag.getIdTag());
+                    System.out.println("✅ Authorize: reusing idTag " + validTag.getIdTag() + " for device " + deviceId);
+                    
+                } else {
+                    // ❌ No valid tag found - create new one (same as REST API)
+                    SmartPlug plug = smartPlugRepository.findById(deviceIdFromPayload)
+                            .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + deviceIdFromPayload));
+                    
+                    String accountReference = (plug.getCebSerialNo() != null)
+                            ? plug.getCebSerialNo()
+                            : plug.getIdDevice();
+                    
+                    String idTag = generateIdTag(accountReference);
+                    LocalDateTime expiryDate = now.plusHours(6); // 6 hours expiry
+                    
+                    // Create and save new IdTagInfo record
+                    IdTagInfo newTag = new IdTagInfo();
+                    newTag.setIdDevice(deviceIdFromPayload);
+                    newTag.setIdTag(idTag);
+                    newTag.setStatus("Accepted");
+                    newTag.setExpiryDate(expiryDate);
+                    newTag.setCreatedAt(now);
+                    idTagInfoRepository.save(newTag);
+                    
+                    // Build response
+                    idTagInfo.put("status", "Accepted");
+                    idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
+                    idTagInfo.put("IdTag", idTag);
+                    System.out.println("✅ Authorize: created new idTag " + idTag + " for device " + deviceId);
+=======
                 var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
 
                 if (tagOpt.isPresent()) {
@@ -1005,6 +1139,7 @@ public class OcppMessageProcessor {
                     // No record at all
                     idTagInfo.put("status", "Invalid");
                     System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
                 }
             }
         } catch (Exception e) {
@@ -1013,8 +1148,20 @@ public class OcppMessageProcessor {
             e.printStackTrace();
         }
 
+<<<<<<< HEAD
+        // Build OCPP response in the exact format your REST API uses
+        ObjectNode payloadNode = objectMapper.createObjectNode();
+        payloadNode.set("idTagInfo", idTagInfo);
+        
+        return new Object[]{
+                3,                    // MessageTypeId for CALLRESULT
+                messageId,            // Message ID
+                payloadNode           // Payload with idTagInfo
+        };
+=======
         response.set("idTagInfo", idTagInfo);
         return response;
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     }
 
     /**
@@ -1274,6 +1421,10 @@ public class OcppMessageProcessor {
             Integer transactionId = payload.path("transactionId").asInt();
             Long meterStop = payload.path("meterStop").asLong();
             String timestampStr = payload.path("timestamp").asText();
+<<<<<<< HEAD
+            String idTag = payload.has("idTag") ? payload.path("idTag").asText() : null;
+=======
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 
             // Get session
             var sessionOpt = chargingSessionRepository.findById(transactionId);
@@ -1292,6 +1443,49 @@ public class OcppMessageProcessor {
                 return response;
             }
 
+<<<<<<< HEAD
+            // Validate IdTag if provided - with expiry check
+            if (idTag != null && !idTag.isEmpty()) {
+                var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
+                LocalDateTime now = LocalDateTime.now();
+                
+                if (tagOpt.isEmpty()) {
+                    idTagInfo.put("status", "Invalid");
+                    System.out.println("❌ StopTransaction: IdTag not found: " + idTag);
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+
+                var tag = tagOpt.get();
+                
+                // Check expiry - same logic as REST API
+                if (tag.getExpiryDate().isBefore(now)) {
+                    idTagInfo.put("status", "Expired");
+                    System.out.println("❌ StopTransaction: IdTag expired: " + idTag + 
+                                     " (expired: " + tag.getExpiryDate() + ")");
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+                
+                // Check status
+                if (!"Accepted".equals(tag.getStatus())) {
+                    idTagInfo.put("status", tag.getStatus());
+                    System.out.println("❌ StopTransaction: IdTag status invalid: " + tag.getStatus());
+                    response.set("idTagInfo", idTagInfo);
+                    return response;
+                }
+            }
+
+            // Process transactionData if present (for meter values)
+            if (payload.has("transactionData")) {
+                JsonNode transactionData = payload.path("transactionData");
+                // Process meter values similar to MeterValues handler
+                // This would be implemented similarly to MeterValues
+            }
+
+            // Calculate duration
+=======
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             // USE SERVER TIME instead of device timestamp
             LocalDateTime endTime = LocalDateTime.now();
             System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
@@ -1432,4 +1626,71 @@ public class OcppMessageProcessor {
         }
     }
 
+<<<<<<< HEAD
+    /**
+     * Generate a unique IdTag for a device - matches REST API logic
+     */
+    private String generateIdTag(String baseValue) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((baseValue + System.currentTimeMillis()).getBytes());
+            String hex = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+            return "IDT-" + hex.substring(0, 8).toUpperCase();
+        } catch (Exception e) {
+            return "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+    }
+
+    /**
+     * Helper method to check if IdTag is valid and not expired
+     */
+    private boolean isValidIdTag(String idTag, String deviceId) {
+        Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
+        if (tagOpt.isEmpty()) {
+            return false;
+        }
+        
+        IdTagInfo tag = tagOpt.get();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Check expiry and status
+        return tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus());
+    }
+
+    /**
+     * Get or create valid IdTag for device - matches REST API logic
+     */
+    private IdTagInfo getOrCreateValidIdTag(String deviceId) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Check for existing valid tag
+        List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(deviceId);
+        for (IdTagInfo tag : existingTags) {
+            if (tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus())) {
+                return tag;
+            }
+        }
+        
+        // Create new tag with 6 hours expiry
+        SmartPlug plug = smartPlugRepository.findById(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + deviceId));
+        
+        String accountReference = (plug.getCebSerialNo() != null)
+                ? plug.getCebSerialNo()
+                : plug.getIdDevice();
+        
+        String idTag = generateIdTag(accountReference);
+        LocalDateTime expiryDate = now.plusHours(6);
+        
+        IdTagInfo newTag = new IdTagInfo();
+        newTag.setIdDevice(deviceId);
+        newTag.setIdTag(idTag);
+        newTag.setStatus("Accepted");
+        newTag.setExpiryDate(expiryDate);
+        newTag.setCreatedAt(now);
+        
+        return idTagInfoRepository.save(newTag);
+    }
+=======
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 }

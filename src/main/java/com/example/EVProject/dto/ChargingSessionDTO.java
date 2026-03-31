@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+package com.example.EVProject.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+=======
 // package com.example.EVProject.dto;
 
 // import lombok.Getter;
@@ -33,6 +42,7 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 @Setter
 @Getter
 public class ChargingSessionDTO {
@@ -45,6 +55,15 @@ public class ChargingSessionDTO {
     private Double totalConsumption;
     private Double amount;
     private String idDevice;
+<<<<<<< HEAD
+
+
+
+
+    // getters and setters
+
+}
+=======
     private String evOwnerAccountNo; 
     private Long meterStart;
     
@@ -69,3 +88,4 @@ public class ChargingSessionDTO {
         return totalConsumption;
     }
 }
+>>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
