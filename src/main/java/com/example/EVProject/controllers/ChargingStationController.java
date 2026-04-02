@@ -1021,9 +1021,11 @@ public class ChargingStationController {
                         .body(Map.of("error", "Invalid message type or action. Expected Heartbeat CALL"));
             }
 
-            // 4️⃣ Build Heartbeat.conf response according to doc
+            LocalDateTime now = LocalDateTime.now();
+            String formattedTime = now.toString() + "Z";  // Append Z to indicate UTC
+            
             Map<String, Object> payload = Map.of(
-                    "currentTime", java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).toString()
+                    "currentTime", formattedTime
             );
 
             Object[] ocppResponse = new Object[]{
@@ -1714,8 +1716,11 @@ public class ChargingStationController {
             smartPlugRepository.save(plug);
 
             // 6️⃣ Build OCPP BootNotification.conf response
+            LocalDateTime now = LocalDateTime.now();
+            String formattedTime = now.toString() + "Z";
+            
             Map<String, Object> payloadConf = Map.of(
-                    "currentTime", java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).toString(),
+                    "currentTime", formattedTime,  // Changed to LocalDateTime
                     "interval", 300, // seconds
                     "status", "Accepted"
             );
