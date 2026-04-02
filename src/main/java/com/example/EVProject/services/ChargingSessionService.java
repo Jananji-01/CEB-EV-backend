@@ -73,8 +73,6 @@ public class ChargingSessionService {
         dto.setTotalConsumption(session.getTotalConsumption());
         dto.setAmount(session.getAmount());
         dto.setIdDevice(session.getIdDevice());
-<<<<<<< HEAD
-=======
         dto.setEvOwnerAccountNo(session.getEvOwnerAccountNo());
         dto.setMeterStart(session.getMeterStart());
         dto.setStatus(session.getStatus()); 
@@ -85,8 +83,6 @@ public class ChargingSessionService {
         } else {
             dto.setStatus("COMPLETED");
         }
-        
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
         return dto;
     }
 
@@ -100,12 +96,9 @@ public class ChargingSessionService {
         session.setTotalConsumption(dto.getTotalConsumption());
         session.setAmount(dto.getAmount());
         session.setIdDevice(dto.getIdDevice());
-<<<<<<< HEAD
-=======
         session.setEvOwnerAccountNo(dto.getEvOwnerAccountNo());
         session.setMeterStart(dto.getMeterStart());
         session.setStatus(dto.getStatus());
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
         return session;
     }
 
@@ -142,8 +135,6 @@ public class ChargingSessionService {
         session.setAmount(0.0);
         session.setSoc(0.0);
         session.setEvOwnerAccountNo(evOwnerAccountNo);
-<<<<<<< HEAD
-=======
         session.setMeterStart(meterStart);
         session.setStatus("ACTIVE");
 
@@ -151,16 +142,12 @@ public class ChargingSessionService {
                        ", MeterStart: " + meterStart + 
                        ", Status: ACTIVE");
 
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 
         // 3️⃣ Save the new session
         ChargingSession savedSession = repository.save(session);
 
-<<<<<<< HEAD
-=======
         System.out.println("✅ Session created with ID: " + savedSession.getSessionId());
 
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
         // 4️⃣ Return its session ID (used as transactionId)
         return savedSession.getSessionId();
     }
@@ -179,10 +166,10 @@ public class ChargingSessionService {
 
     @Transactional
     public void endChargingSession(Integer transactionId, Long meterStop, String timestampStr) {
-<<<<<<< HEAD
+
         var sessionOpt = repository.findById(transactionId);
         if (sessionOpt.isEmpty()) {
-=======
+
         System.out.println("=== endChargingSession ===");
         System.out.println("Transaction ID: " + transactionId);
         System.out.println("Meter Stop: " + meterStop);
@@ -191,16 +178,13 @@ public class ChargingSessionService {
         var sessionOpt = repository.findById(transactionId);
         if (sessionOpt.isEmpty()) {
             System.out.println("❌ Session not found for transactionId: " + transactionId);
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             throw new IllegalArgumentException("Session not found for transactionId: " + transactionId);
         }
 
         ChargingSession session = sessionOpt.get();
-<<<<<<< HEAD
         session.setEndTime(LocalDateTime.parse(timestampStr.replace("Z", "")));
         session.setTotalConsumption((double) (meterStop != null ? meterStop : 0));
         repository.save(session);
-=======
         System.out.println("Found session: " + session.getSessionId());
         System.out.println("Current end time: " + session.getEndTime());
         System.out.println("Current Status: " + session.getStatus());
@@ -249,7 +233,6 @@ public class ChargingSessionService {
         System.out.println("   - Total Consumption: " + savedSession.getTotalConsumption() + " kWh");
         System.out.println("   - Amount: $" + String.format("%.2f", savedSession.getAmount()));
         System.out.println("   - Status: " + savedSession.getStatus());
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     }
 
 }

@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 // package com.example.EVProject.services;
 
 // import com.example.EVProject.model.*;
@@ -815,7 +813,6 @@
 //     }
 // }
 
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 package com.example.EVProject.services;
 
 import com.example.EVProject.model.*;
@@ -854,11 +851,8 @@ public class OcppMessageProcessor {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-<<<<<<< HEAD
-=======
     // OcppWebSocketService is no longer used – removed
 
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -903,22 +897,19 @@ public class OcppMessageProcessor {
      * Handle OCPP CALL messages (device → server)
      */
     private String handleCall(String deviceId, String messageId, String action, JsonNode payload) {
-<<<<<<< HEAD
         ObjectNode responsePayload = objectMapper.createObjectNode();
-=======
         ObjectNode responsePayload;
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 
         switch (action) {
             case "BootNotification":
                 responsePayload = handleBootNotification(deviceId, payload);
                 break;
             case "Authorize":
-<<<<<<< HEAD
+
                 handleAuthorize(deviceId, payload, messageId);
-=======
+
                 responsePayload = handleAuthorize(deviceId, payload);
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
+
                 break;
             case "StartTransaction":
                 responsePayload = handleStartTransaction(deviceId, payload);
@@ -959,14 +950,12 @@ public class OcppMessageProcessor {
         ObjectNode response = objectMapper.createObjectNode();
 
         try {
-<<<<<<< HEAD
+
             // Extract payload fields
             String model = payload.has("chargePointModel") ? payload.get("chargePointModel").asText() : null;
             String vendor = payload.has("chargePointVendor") ? payload.get("chargePointVendor").asText() : null;
             String firmware = payload.has("firmwareVersion") ? payload.get("firmwareVersion").asText() : null;
 
-=======
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             // Update device information
             SmartPlug plug = smartPlugRepository.findById(deviceId)
                     .orElseGet(() -> {
@@ -998,7 +987,7 @@ public class OcppMessageProcessor {
      * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
      * Does NOT create a new record – that is done only during QR scan.
      */
-<<<<<<< HEAD
+
     // private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
     //     ObjectNode response = objectMapper.createObjectNode();
     //     ObjectNode idTagInfo = objectMapper.createObjectNode();
@@ -1052,19 +1041,14 @@ public class OcppMessageProcessor {
      * Creates a new IdTag if no valid one exists.
      */
     private Object[] handleAuthorize(String deviceId, JsonNode payload, String messageId) {
-=======
     private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
         ObjectNode idTagInfo = objectMapper.createObjectNode();
 
         try {
             String deviceIdFromPayload = payload.path("IdDevice").asText();
-<<<<<<< HEAD
             
             // 1️⃣ Validate payload IdDevice
-=======
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
                 System.err.println("❌ Authorize: missing IdDevice in payload");
@@ -1073,7 +1057,6 @@ public class OcppMessageProcessor {
                 System.err.println("❌ Authorize: deviceId mismatch (header=" + deviceId + ", payload=" + deviceIdFromPayload + ")");
             } else {
                 LocalDateTime now = LocalDateTime.now();
-<<<<<<< HEAD
                 
                 // 2️⃣ Find valid (non-expired) tag
                 List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(deviceIdFromPayload);
@@ -1119,7 +1102,6 @@ public class OcppMessageProcessor {
                     idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
                     idTagInfo.put("IdTag", idTag);
                     System.out.println("✅ Authorize: created new idTag " + idTag + " for device " + deviceId);
-=======
                 var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
 
                 if (tagOpt.isPresent()) {
@@ -1139,7 +1121,6 @@ public class OcppMessageProcessor {
                     // No record at all
                     idTagInfo.put("status", "Invalid");
                     System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
                 }
             }
         } catch (Exception e) {
@@ -1148,7 +1129,6 @@ public class OcppMessageProcessor {
             e.printStackTrace();
         }
 
-<<<<<<< HEAD
         // Build OCPP response in the exact format your REST API uses
         ObjectNode payloadNode = objectMapper.createObjectNode();
         payloadNode.set("idTagInfo", idTagInfo);
@@ -1158,10 +1138,9 @@ public class OcppMessageProcessor {
                 messageId,            // Message ID
                 payloadNode           // Payload with idTagInfo
         };
-=======
+
         response.set("idTagInfo", idTagInfo);
         return response;
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
     }
 
     /**
@@ -1421,10 +1400,7 @@ public class OcppMessageProcessor {
             Integer transactionId = payload.path("transactionId").asInt();
             Long meterStop = payload.path("meterStop").asLong();
             String timestampStr = payload.path("timestamp").asText();
-<<<<<<< HEAD
             String idTag = payload.has("idTag") ? payload.path("idTag").asText() : null;
-=======
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 
             // Get session
             var sessionOpt = chargingSessionRepository.findById(transactionId);
@@ -1443,7 +1419,6 @@ public class OcppMessageProcessor {
                 return response;
             }
 
-<<<<<<< HEAD
             // Validate IdTag if provided - with expiry check
             if (idTag != null && !idTag.isEmpty()) {
                 var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
@@ -1484,8 +1459,6 @@ public class OcppMessageProcessor {
             }
 
             // Calculate duration
-=======
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
             // USE SERVER TIME instead of device timestamp
             LocalDateTime endTime = LocalDateTime.now();
             System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
@@ -1626,7 +1599,7 @@ public class OcppMessageProcessor {
         }
     }
 
-<<<<<<< HEAD
+
     /**
      * Generate a unique IdTag for a device - matches REST API logic
      */
@@ -1691,6 +1664,5 @@ public class OcppMessageProcessor {
         
         return idTagInfoRepository.save(newTag);
     }
-=======
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
+
 }
