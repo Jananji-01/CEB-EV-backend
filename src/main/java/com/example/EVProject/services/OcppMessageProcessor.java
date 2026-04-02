@@ -898,18 +898,13 @@ public class OcppMessageProcessor {
      */
     private String handleCall(String deviceId, String messageId, String action, JsonNode payload) {
         ObjectNode responsePayload = objectMapper.createObjectNode();
-        ObjectNode responsePayload;
 
         switch (action) {
             case "BootNotification":
                 responsePayload = handleBootNotification(deviceId, payload);
                 break;
             case "Authorize":
-
-                handleAuthorize(deviceId, payload, messageId);
-
                 responsePayload = handleAuthorize(deviceId, payload);
-
                 break;
             case "StartTransaction":
                 responsePayload = handleStartTransaction(deviceId, payload);
@@ -1040,7 +1035,6 @@ public class OcppMessageProcessor {
      * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
      * Creates a new IdTag if no valid one exists.
      */
-    private Object[] handleAuthorize(String deviceId, JsonNode payload, String messageId) {
     private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
         ObjectNode idTagInfo = objectMapper.createObjectNode();
@@ -1102,25 +1096,6 @@ public class OcppMessageProcessor {
                     idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
                     idTagInfo.put("IdTag", idTag);
                     System.out.println("✅ Authorize: created new idTag " + idTag + " for device " + deviceId);
-                var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
-
-                if (tagOpt.isPresent()) {
-                    IdTagInfo tag = tagOpt.get();
-                    if (tag.getExpiryDate().isAfter(now)) {
-                        // Valid record found
-                        idTagInfo.put("status", "Accepted");
-                        idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
-                        idTagInfo.put("IdTag", tag.getIdTag());
-                        System.out.println("✅ Authorize: returning idTag " + tag.getIdTag() + " for device " + deviceId);
-                    } else {
-                        // Record expired
-                        idTagInfo.put("status", "Invalid");
-                        System.out.println("⚠️ Authorize: latest IdTagInfo expired for device " + deviceId);
-                    }
-                } else {
-                    // No record at all
-                    idTagInfo.put("status", "Invalid");
-                    System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
                 }
             }
         } catch (Exception e) {
@@ -1128,16 +1103,6 @@ public class OcppMessageProcessor {
             System.err.println("❌ Authorize error for device " + deviceId + ": " + e.getMessage());
             e.printStackTrace();
         }
-
-        // Build OCPP response in the exact format your REST API uses
-        ObjectNode payloadNode = objectMapper.createObjectNode();
-        payloadNode.set("idTagInfo", idTagInfo);
-        
-        return new Object[]{
-                3,                    // MessageTypeId for CALLRESULT
-                messageId,            // Message ID
-                payloadNode           // Payload with idTagInfo
-        };
 
         response.set("idTagInfo", idTagInfo);
         return response;

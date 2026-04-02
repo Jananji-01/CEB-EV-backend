@@ -64,5 +64,4 @@ public class ChargingSession {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
->>>>>>> d22e5da8fc6a82b034607c878e2b6dd632f0e2b0
 }

@@ -175,7 +175,6 @@ public class ChargingSessionService {
         System.out.println("Meter Stop: " + meterStop);
         System.out.println("Timestamp: " + timestampStr);
         
-        var sessionOpt = repository.findById(transactionId);
         if (sessionOpt.isEmpty()) {
             System.out.println("❌ Session not found for transactionId: " + transactionId);
             throw new IllegalArgumentException("Session not found for transactionId: " + transactionId);
@@ -235,4 +234,5 @@ public class ChargingSessionService {
         System.out.println("   - Status: " + savedSession.getStatus());
     }
 
+}
 }
