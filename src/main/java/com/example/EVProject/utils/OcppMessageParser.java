@@ -17,5 +17,7 @@ public class OcppMessageParser {
         return new ParsedOcppMessage(messageTypeId, messageId, action, payload);
     }
 
-    public record ParsedOcppMessage(int messageTypeId, String messageId, String action, JsonNode payload) {}
+    public record ParsedOcppMessage(int messageTypeId, String messageId, String action, JsonNode payload) {
+    // empty
+    }
 }
