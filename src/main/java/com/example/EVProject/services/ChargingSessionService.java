@@ -122,7 +122,6 @@ public class ChargingSessionService {
         // 1️⃣ Check for existing active session
         Optional<ChargingSession> activeSession = repository.findByIdDeviceAndEndTimeIsNull(idDevice);
         if (activeSession.isPresent()) {
-            // There’s already an active charging session — reject (ConcurrentTx)
             throw new IllegalStateException("ConcurrentTx");
         }
 
@@ -130,25 +129,19 @@ public class ChargingSessionService {
         ChargingSession session = new ChargingSession();
         session.setIdDevice(idDevice);
         session.setStartTime(LocalDateTime.now());
-        session.setChargingMode("NORMAL");    // default
+        session.setChargingMode("NORMAL");
         session.setTotalConsumption(0.0);
         session.setAmount(0.0);
         session.setSoc(0.0);
         session.setEvOwnerAccountNo(evOwnerAccountNo);
-        session.setMeterStart(meterStart);
-        session.setStatus("ACTIVE");
-
-        System.out.println("Session created - ID: " + session.getSessionId() + 
-                       ", MeterStart: " + meterStart + 
-                       ", Status: ACTIVE");
-
+        session.setMeterStart(meterStart);  // ← Store the starting meter value
+        
+        System.out.println("Session created with meterStart: " + meterStart);
 
         // 3️⃣ Save the new session
         ChargingSession savedSession = repository.save(session);
 
-        System.out.println("✅ Session created with ID: " + savedSession.getSessionId());
-
-        // 4️⃣ Return its session ID (used as transactionId)
+        // 4️⃣ Return its session ID
         return savedSession.getSessionId();
     }
 
@@ -166,73 +159,60 @@ public class ChargingSessionService {
 
     @Transactional
     public void endChargingSession(Integer transactionId, Long meterStop, String timestampStr) {
-
-        var sessionOpt = repository.findById(transactionId);
-        if (sessionOpt.isEmpty()) {
-
         System.out.println("=== endChargingSession ===");
         System.out.println("Transaction ID: " + transactionId);
         System.out.println("Meter Stop: " + meterStop);
-        System.out.println("Timestamp: " + timestampStr);
+        System.out.println("Timestamp from request (ignored): " + timestampStr);
         
+        var sessionOpt = repository.findById(transactionId);
         if (sessionOpt.isEmpty()) {
             System.out.println("❌ Session not found for transactionId: " + transactionId);
             throw new IllegalArgumentException("Session not found for transactionId: " + transactionId);
         }
 
         ChargingSession session = sessionOpt.get();
-        session.setEndTime(LocalDateTime.parse(timestampStr.replace("Z", "")));
-        session.setTotalConsumption((double) (meterStop != null ? meterStop : 0));
-        repository.save(session);
         System.out.println("Found session: " + session.getSessionId());
-        System.out.println("Current end time: " + session.getEndTime());
-        System.out.println("Current Status: " + session.getStatus());
+        System.out.println("Meter Start: " + session.getMeterStart());
         
-        // Parse timestamp or use current time if not provided
-        LocalDateTime endTime;
-        if (timestampStr != null && !timestampStr.isEmpty()) {
-            endTime = LocalDateTime.parse(timestampStr.replace("Z", ""));
-            System.out.println("Using provided timestamp: " + endTime);
-        } else {
-            endTime = LocalDateTime.now();
-            System.out.println("Using current time: " + endTime);
-        }
-        
+        // ✅ ALWAYS use current time when stop button is clicked
+        LocalDateTime endTime = LocalDateTime.now();
         session.setEndTime(endTime);
+        System.out.println("Using current time: " + endTime);
         
         // ✅ Calculate total consumption correctly
-        if (meterStop != null && session.getMeterStart() != null) {
-            double consumption = (double) (meterStop - session.getMeterStart());
-            session.setTotalConsumption(consumption);
-            
-            // Calculate amount based on consumption (example: $0.15 per kWh)
-            double amount = consumption * 0.15;
-            session.setAmount(amount);
-            
-            System.out.println("Meter Start: " + session.getMeterStart());
-            System.out.println("Meter Stop: " + meterStop);
-            System.out.println("Total consumption: " + consumption + " kWh");
-            System.out.println("Amount: $" + String.format("%.2f", amount));
-        } else if (meterStop != null) {
-            // Fallback if meterStart is not available
-            session.setTotalConsumption(meterStop.doubleValue());
-            double amount = meterStop.doubleValue() * 0.15;
-            session.setAmount(amount);
-            System.out.println("⚠️ MeterStart not available, using meterStop as consumption");
+        if (meterStop != null) {
+            if (session.getMeterStart() != null) {
+                // Calculate actual consumption by subtracting meterStart from meterStop
+                double consumption = (double) (meterStop - session.getMeterStart());
+                session.setTotalConsumption(consumption);
+                
+                // Calculate amount based on consumption (example: $0.15 per kWh)
+                double amount = consumption * 0.15;
+                session.setAmount(amount);
+                
+                System.out.println("Meter Start: " + session.getMeterStart());
+                System.out.println("Meter Stop: " + meterStop);
+                System.out.println("Total consumption: " + consumption + " kWh");
+                System.out.println("Amount: $" + String.format("%.2f", amount));
+            } else {
+                // Fallback if meterStart is not available in the database
+                session.setTotalConsumption(meterStop.doubleValue());
+                double amount = meterStop.doubleValue() * 0.15;
+                session.setAmount(amount);
+                System.out.println("⚠️ MeterStart not available, using meterStop as consumption: " + meterStop + " kWh");
+            }
+        } else {
+            System.out.println("⚠️ MeterStop is null, consumption not calculated");
         }
         
-        // ✅ Set status to COMPLETED
         session.setStatus("COMPLETED");
-        
         
         // Save the updated session
         ChargingSession savedSession = repository.save(session);
-        System.out.println("✅ Session saved:");
-        System.out.println("   - End Time: " + savedSession.getEndTime());
-        System.out.println("   - Total Consumption: " + savedSession.getTotalConsumption() + " kWh");
-        System.out.println("   - Amount: $" + String.format("%.2f", savedSession.getAmount()));
-        System.out.println("   - Status: " + savedSession.getStatus());
+        System.out.println("✅ Session saved with end time: " + savedSession.getEndTime());
+        System.out.println("✅ Total consumption: " + savedSession.getTotalConsumption());
+        System.out.println("✅ Amount: $" + String.format("%.2f", savedSession.getAmount()));
+        System.out.println("✅ Status: " + savedSession.getStatus());
+        System.out.println("=== endChargingSession completed ===");
     }
-
-}
 }
