@@ -14,6 +14,10 @@ public interface RooftopSolarOwnerRepository extends JpaRepository<RooftopSolarO
     Optional<RooftopSolarOwner> findByUsername(String username);
     boolean existsByUsername(String username);
 
+    @Query("SELECT o FROM RooftopSolarOwner o WHERE o.eAccountNumber = :accountNumber")
+    Optional<RooftopSolarOwner> findByEAccountNumber(@Param("accountNumber") String accountNumber);
+
+
     @Query(value = """
 
             SELECT

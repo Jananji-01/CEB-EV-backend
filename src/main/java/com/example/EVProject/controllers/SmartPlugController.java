@@ -1,43 +1,6 @@
-//package com.example.EVProject.controllers;
-//
-//import com.example.EVProject.dto.SmartPlugDTO;
-//import com.example.EVProject.services.SmartPlugService;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.util.List;
-//
-//@RestController
-//@RequestMapping("/api/smart-plugs")
-//public class SmartPlugController {
-//
-//    @Autowired
-//    private SmartPlugService service;
-//
-//    @GetMapping
-//    public List<SmartPlugDTO> getAllSmartPlugs() {
-//        return service.getAllSmartPlugs();
-//    }
-//
-//    @GetMapping("/{id}")
-//    public SmartPlugDTO getSmartPlugById(@PathVariable String id) {
-//        return service.getSmartPlugById(id);
-//    }
-//
-//    @PostMapping
-//    public SmartPlugDTO saveSmartPlug(@RequestBody SmartPlugDTO dto) {
-//        return service.saveSmartPlug(dto);
-//    }
-//
-//    @DeleteMapping("/{id}")
-//    public void deleteSmartPlug(@PathVariable String id) {
-//        service.deleteSmartPlug(id);
-//    }
-//}
-
-
 package com.example.EVProject.controllers;
 
+import com.example.EVProject.dto.AssignSmartPlugRequestDTO;
 import com.example.EVProject.dto.SmartPlugDTO;
 import com.example.EVProject.services.SmartPlugService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +50,18 @@ public class SmartPlugController {
         }
     }
 
+    @PostMapping("/{idDevice}/assign")
+    public ResponseEntity<?> assignSmartPlugToStation(
+            @PathVariable String idDevice,
+            @RequestBody AssignSmartPlugRequestDTO request) {
+        try {
+            SmartPlugDTO assigned = service.assignToStation(idDevice, request);
+            return ResponseEntity.ok(assigned);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSmartPlug(@PathVariable String id, @RequestBody SmartPlugDTO updateDTO) {
         try {
@@ -110,20 +85,6 @@ public class SmartPlugController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
-
-    // NEW API → Get QR Code data
-    @GetMapping("/{id}/qr")
-    public String getQRCodeData(@PathVariable String id) {
-
-        SmartPlugDTO plug = service.getSmartPlugById(id);
-
-        if (plug == null) {
-            return "Smart plug not found";
-        }
-
-        return plug.getQrCodeData();
-    }
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSmartPlug(@PathVariable String id) {

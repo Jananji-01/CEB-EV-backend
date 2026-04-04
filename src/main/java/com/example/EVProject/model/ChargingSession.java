@@ -42,8 +42,6 @@ public class ChargingSession {
     @Column(name = "ev_owner_account_no")
     private String evOwnerAccountNo;
 
-    @Transient
-
     @Column(name = "meter_start")
     private Long meterStart;
 

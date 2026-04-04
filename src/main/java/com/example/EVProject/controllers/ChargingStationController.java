@@ -1297,14 +1297,10 @@ public class ChargingStationController {
         LocalDateTime receivedAt = LocalDateTime.now();
         
         try {
-            // Validate header IdDevice
+            // ✅ Validate header IdDevice
             idDeviceValidator.validate(idDevice);
-            
-            System.out.println("=== StopTransaction Request ===");
-            System.out.println("Device ID: " + idDevice);
-            System.out.println("Raw Body: " + rawBody);
 
-            // Parse OCPP message
+            // ✅ Parse OCPP message
             var parsed = OcppMessageParser.parse(rawBody);
             if (parsed.messageTypeId() != 2 || !"StopTransaction".equalsIgnoreCase(parsed.action())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -1316,22 +1312,15 @@ public class ChargingStationController {
             Long meterStop = payload.has("meterStop") ? payload.get("meterStop").asLong() : null;
             String timestamp = payload.has("timestamp") ? payload.get("timestamp").asText() : null;
             String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
-            
-            System.out.println("Transaction ID from request: " + transactionId);
-            System.out.println("Meter Stop: " + meterStop);
-            System.out.println("Timestamp: " + timestamp);
-            System.out.println("IdTag: " + idTag);
 
             if (transactionId == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Missing transactionId in payload"));
             }
 
-            // Check session existence
-            ChargingSessionDTO sessionDTO = chargingSessionService.getSessionById(transactionId);
-            
-            if (sessionDTO == null || sessionDTO.getSessionId() == null) {
-                System.out.println("❌ Session not found for transactionId: " + transactionId);
+            // ✅ Check session existence
+            var sessionOpt = chargingSessionService.getSessionById(transactionId);
+            if (sessionOpt == null || sessionOpt.getSessionId() == null) {
                 Map<String, Object> idTagInfo = Map.of("status", "Invalid");
                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
                 
@@ -1348,45 +1337,68 @@ public class ChargingStationController {
                 
                 return ResponseEntity.ok(ocppResponse);
             }
-            
-            System.out.println("✅ Found session: ID=" + sessionDTO.getSessionId() + 
-                            ", Device=" + sessionDTO.getIdDevice() +
-                            ", StartTime=" + sessionDTO.getStartTime());
 
-            // Validate that the device matches the session
-            if (!idDevice.equals(sessionDTO.getIdDevice())) {
-                System.out.println("❌ Device mismatch: Header=" + idDevice + ", Session=" + sessionDTO.getIdDevice());
-                Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-                Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                return ResponseEntity.ok(ocppResponse);
-            }
-
-            // Optional: Validate IdTag (but don't fail if expired - just log it)
-            String validationStatus = "Accepted";
-            
+            // ✅ Validate IdTag belongs to same IdDevice if provided
             if (idTag != null && !idTag.isEmpty()) {
                 var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, idDevice);
-                
+
                 if (tagOpt.isEmpty()) {
-                    validationStatus = "Invalid";
-                    System.out.println("⚠️ IdTag not found: " + idTag);
-                } else {
-                    var tag = tagOpt.get();
-                    if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
-                        validationStatus = tag.getStatus();
-                        System.out.println("⚠️ IdTag status: " + tag.getStatus());
-                    } else if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
-                        validationStatus = "Expired";
-                        System.out.println("⚠️ IdTag expired at: " + tag.getExpiryDate());
-                    } else {
-                        System.out.println("✅ IdTag validated successfully");
-                    }
+                    Map<String, Object> idTagInfo = Map.of("status", "Invalid");
+                    Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+                    
+                    OcppMessageLog log = new OcppMessageLog();
+                    log.setIdDevice(idDevice);
+                    log.setMessageId(parsed.messageId());
+                    log.setAction(parsed.action());
+                    log.setMessageTypeId(parsed.messageTypeId());
+                    log.setPayload(payload.toString());
+                    log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
+                    log.setReceivedAt(receivedAt);
+                    log.setRespondedAt(LocalDateTime.now());
+                    messageLogRepo.save(log);
+                    
+                    return ResponseEntity.ok(ocppResponse);
+                }
+
+                var tag = tagOpt.get();
+                if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
+                    Map<String, Object> idTagInfo = Map.of("status", tag.getStatus());
+                    Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+                    
+                    OcppMessageLog log = new OcppMessageLog();
+                    log.setIdDevice(idDevice);
+                    log.setMessageId(parsed.messageId());
+                    log.setAction(parsed.action());
+                    log.setMessageTypeId(parsed.messageTypeId());
+                    log.setPayload(payload.toString());
+                    log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
+                    log.setReceivedAt(receivedAt);
+                    log.setRespondedAt(LocalDateTime.now());
+                    messageLogRepo.save(log);
+                    
+                    return ResponseEntity.ok(ocppResponse);
+                }
+                if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
+                    Map<String, Object> idTagInfo = Map.of("status", "Expired");
+                    Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
+                    
+                    OcppMessageLog log = new OcppMessageLog();
+                    log.setIdDevice(idDevice);
+                    log.setMessageId(parsed.messageId());
+                    log.setAction(parsed.action());
+                    log.setMessageTypeId(parsed.messageTypeId());
+                    log.setPayload(payload.toString());
+                    log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
+                    log.setReceivedAt(receivedAt);
+                    log.setRespondedAt(LocalDateTime.now());
+                    messageLogRepo.save(log);
+                    
+                    return ResponseEntity.ok(ocppResponse);
                 }
             }
 
-            // Save meter values if present
+            // ✅ Save meter values if present
             if (payload.has("transactionData")) {
-                System.out.println("Processing transactionData...");
                 MeterValueRequest meterRequest = new MeterValueRequest();
                 meterRequest.setConnectorId(1);
                 meterRequest.setTransactionId(transactionId);
@@ -1407,28 +1419,23 @@ public class ChargingStationController {
                 });
                 meterRequest.setMeterValue(readings);
                 meterValueService.saveMeterValues(meterRequest);
-                System.out.println("✅ Meter values saved");
             }
 
-            // Update session end info
-            System.out.println("Updating session end info for transactionId: " + transactionId);
+            // ✅ Update session end info
             chargingSessionService.endChargingSession(transactionId, meterStop, timestamp);
             
-            // Verify the update by fetching the session again
-            ChargingSessionDTO updatedSession = chargingSessionService.getSessionById(transactionId);
-            System.out.println("✅ Session updated: EndTime=" + updatedSession.getEndTime() + 
-                            ", TotalConsumption=" + updatedSession.getTotalConsumption() +
-                            ", Amount=" + updatedSession.getAmount());
+            System.out.println("✅ Session " + transactionId + " ended. Total consumption: " + 
+                            (meterStop != null ? meterStop + " kWh" : "N/A"));
 
-            // Build OCPP response
-            Map<String, Object> idTagInfo = Map.of("status", validationStatus);
+            // ✅ Build OCPP response
+            Map<String, Object> idTagInfo = Map.of("status", "Accepted");
             Object[] ocppResponse = new Object[]{
                     3,
                     parsed.messageId(),
                     Map.of("idTagInfo", idTagInfo)
             };
 
-            // Create and save log
+            // ✅ Create and save log
             OcppMessageLog log = new OcppMessageLog();
             log.setIdDevice(idDevice);
             log.setMessageId(parsed.messageId());
@@ -1466,7 +1473,6 @@ public class ChargingStationController {
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
     }
-
     @PostMapping("/bootNotification")
     public ResponseEntity<?> handleBootNotification(
             @RequestBody String rawBody,
