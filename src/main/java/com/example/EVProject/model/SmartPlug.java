@@ -92,6 +92,9 @@ public class SmartPlug {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "E_ACCOUNT_NUMBER")
+    private String accountNumber;
+
     @ManyToOne
     @JoinColumn(name = "station_id", referencedColumnName = "station_id", insertable = false, updatable = false)
     private ChargingStation chargingStation;

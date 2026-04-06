@@ -16,8 +16,10 @@ public class ChargingStationDTO {
     private Double solarPowerAvailable;
     private String status;
     private String errorCode;
-    private LocalDateTime timestamp; 
+    private LocalDateTime timestampCol; 
     private Integer solarOwnerId;
+    private String stationName;
+    private String idDevice;
 
     // getters and setters
 
@@ -27,6 +29,14 @@ public class ChargingStationDTO {
 
     public void setStationId(Integer stationId) {
         this.stationId = stationId;
+    }
+
+    public String getStationName() { 
+        return stationName; 
+    }
+
+    public void setStationName(String stationName) { 
+        this.stationName = stationName; 
     }
 
     public Double getLatitude() {
@@ -67,5 +77,21 @@ public class ChargingStationDTO {
 
     public void setSolarOwnerId(Integer solarOwnerId) {
         this.solarOwnerId = solarOwnerId;
+    }
+
+    public LocalDateTime getTimestampCol() { 
+        return timestampCol; 
+    }
+
+    public void setTimestampCol(LocalDateTime timestampCol) { 
+        this.timestampCol = timestampCol; 
+    }
+
+    public String getIdDevice() { 
+        return idDevice; 
+    }
+
+    public void setIdDevice(String idDevice) { 
+        this.idDevice = idDevice; 
     }
 }
