@@ -168,7 +168,7 @@
 
 package com.example.EVProject.services;
 
-import com.example.EVProject.dto.AssignSmartPlugRequest;
+import com.example.EVProject.dto.AssignSmartPlugRequestDTO;
 import com.example.EVProject.dto.ChargingStationDTO;
 import com.example.EVProject.dto.SmartPlugDTO;
 import com.example.EVProject.model.RooftopSolarOwner;
@@ -244,7 +244,7 @@ public class SmartPlugService {
     }
 
     @Transactional
-    public SmartPlugDTO assignToStation(String idDevice, AssignSmartPlugRequest request) {
+    public SmartPlugDTO assignToStation(String idDevice, AssignSmartPlugRequestDTO request) {
         SmartPlug plug = repository.findById(idDevice)
                 .orElseThrow(() -> new RuntimeException("Smart plug not found: " + idDevice));
 
@@ -257,7 +257,8 @@ public class SmartPlugService {
             newStation.setSolarPowerAvailable(request.getSolarPowerAvailable());
             newStation.setStatus("Available");
             newStation.setErrorCode("NoError");
-            newStation.setTimestamp(LocalDateTime.now());
+            newStation.setTimestampCol(LocalDateTime.now());
+            newStation.setIdDevice(idDevice);
 
             // Find the solar owner by account number
             RooftopSolarOwner owner = solarOwnerRepository.findByEAccountNumber(request.getAccountNumber())

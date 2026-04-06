@@ -30,7 +30,7 @@ public class ChargingStation {
     @Column(name = "LONGITUDE")
     private Double longitude;
 
-    @Column(name = "station_name")
+    @Column(name = "STATION_NAME")
     private String stationName;
 
     @Column(name = "SOLAR_POWER_AVAILABLE")
@@ -44,6 +44,13 @@ public class ChargingStation {
 
     @Column(name = "TIMESTAMP_COL", nullable = false)
     private LocalDateTime timestamp;
+
+    @PrePersist
+    protected void onCreate() {
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();
+        }
+    }
 
     @Column(name = "SOLAR_OWNER_ID")
     private Integer solarOwnerId;
