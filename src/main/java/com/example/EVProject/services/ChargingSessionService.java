@@ -172,12 +172,13 @@ public class ChargingSessionService {
 
         ChargingSession session = sessionOpt.get();
         System.out.println("Found session: " + session.getSessionId());
+        System.out.println("Current end_time in DB before update: " + session.getEndTime());
         System.out.println("Meter Start: " + session.getMeterStart());
         
         // ✅ ALWAYS use current time when stop button is clicked
         LocalDateTime endTime = LocalDateTime.now();
+        System.out.println("Setting end_time to CURRENT TIME: " + endTime);
         session.setEndTime(endTime);
-        System.out.println("Using current time: " + endTime);
         
         // ✅ Calculate total consumption correctly
         if (meterStop != null) {
@@ -209,10 +210,17 @@ public class ChargingSessionService {
         
         // Save the updated session
         ChargingSession savedSession = repository.save(session);
-        System.out.println("✅ Session saved with end time: " + savedSession.getEndTime());
+        System.out.println("✅ AFTER SAVE - End time in saved entity: " + savedSession.getEndTime());
         System.out.println("✅ Total consumption: " + savedSession.getTotalConsumption());
         System.out.println("✅ Amount: $" + String.format("%.2f", savedSession.getAmount()));
         System.out.println("✅ Status: " + savedSession.getStatus());
+        
+        // Verify by fetching fresh from database
+        var verifySession = repository.findById(transactionId);
+        if (verifySession.isPresent()) {
+            System.out.println("✅ VERIFICATION FROM DB - End time: " + verifySession.get().getEndTime());
+        }
+        
         System.out.println("=== endChargingSession completed ===");
     }
 }
