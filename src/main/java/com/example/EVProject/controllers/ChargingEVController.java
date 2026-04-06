@@ -159,7 +159,7 @@ public class ChargingEVController {
             EvOwner owner = ownerOpt.get();
             String idTag = owner.getIdTag();
 
-            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+            LocalDateTime now = LocalDateTime.now();
             Optional<IdTagInfo> existingTag = idTagInfoRepository.findByIdTagAndIdDevice(idTag, idDevice);
 
             IdTagInfo tagInfo;

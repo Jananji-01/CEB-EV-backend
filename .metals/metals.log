@@ -1,0 +1,48 @@
+2026.03.30 15:48:21 INFO  tracing is disabled for protocol LSP, to enable tracing of incoming and outgoing JSON messages create an empty file at d:\EV-Project\ev-backend\.metals\lsp.trace.json
+2026.03.30 15:49:09 INFO  logging to files D:\EV-Project\ev-backend\.metals\metals.log
+2026.03.30 15:49:09 INFO  Started: Metals version 1.6.6 in folders 'D:\EV-Project\ev-backend' for client Visual Studio Code 1.113.0.
+2026.03.30 15:49:10 INFO  time: initialize in 1.54s
+2026.03.30 15:49:14 INFO  Memory monitor started
+2026.03.30 15:49:57 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.03.30 15:50:04 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\services\ChargingStationService.java. Using fallback presentation compiler.
+2026.03.30 15:51:48 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\services\ChargingStationService.java. Using fallback presentation compiler.
+2026.03.30 15:54:51 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\services\ChargingStationService.java. Using fallback presentation compiler.
+2026.03.30 15:54:51 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java. Using fallback presentation compiler.
+2026.03.30 15:54:57 WARN  no build target for: D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java
+Mar 30, 2026 3:54:58 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 9
+2026.03.30 15:55:00 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java. Using fallback presentation compiler.
+2026.03.30 15:55:00 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java. Using fallback presentation compiler.
+Mar 30, 2026 3:55:00 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 12
+Mar 30, 2026 3:55:00 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 10
+Mar 30, 2026 3:55:00 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 11
+2026.03.30 15:55:00 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java. Using fallback presentation compiler.
+2026.03.30 15:55:01 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\ChargingStation.java. Using fallback presentation compiler.
+2026.03.30 15:55:01 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+2026.03.30 15:55:02 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+2026.03.30 15:55:01 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 16
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 17
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 19
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 27
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 20
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 21
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 22
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 23
+Mar 30, 2026 3:55:02 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 24
+2026.03.30 15:55:41 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+2026.03.30 15:56:01 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+2026.03.30 15:56:02 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.
+2026.03.30 15:56:41 INFO  no build target found for D:\EV-Project\ev-backend\src\main\java\com\example\EVProject\model\SmartPlug.java. Using fallback presentation compiler.

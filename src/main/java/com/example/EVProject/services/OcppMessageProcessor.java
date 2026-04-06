@@ -15,6 +15,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OcppMessageProcessor {
@@ -34,12 +36,21 @@ public class OcppMessageProcessor {
     @Autowired
     private OcppMessageLogRepository messageLogRepository;
     @Autowired
+    private BillingService billingService;
+    @Autowired
     private SimpMessagingTemplate messagingTemplate;
-
-    // OcppWebSocketService is no longer used – removed
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
+    // Cache for last meter reading per transaction (power integration)
+    private final Map<Integer, MeterReading> lastMeterReading = new ConcurrentHashMap<>();
+
+    private static class MeterReading {
+        LocalDateTime timestamp;
+        double power; // in watts
+        MeterReading(LocalDateTime ts, double p) { timestamp = ts; power = p; }
+    }
 
     /**
      * Process incoming OCPP WebSocket message
@@ -154,8 +165,6 @@ public class OcppMessageProcessor {
 
     /**
      * 2. Authorize Handler – uses IdDevice field
-     * Returns the persistent IdTag from id_tag_info if a valid (non‑expired) record exists.
-     * Does NOT create a new record – that is done only during QR scan.
      */
     private ObjectNode handleAuthorize(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
@@ -176,18 +185,15 @@ public class OcppMessageProcessor {
                 if (tagOpt.isPresent()) {
                     IdTagInfo tag = tagOpt.get();
                     if (tag.getExpiryDate().isAfter(now)) {
-                        // Valid record found
                         idTagInfo.put("status", "Accepted");
                         idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
                         idTagInfo.put("IdTag", tag.getIdTag());
                         System.out.println("✅ Authorize: returning idTag " + tag.getIdTag() + " for device " + deviceId);
                     } else {
-                        // Record expired
                         idTagInfo.put("status", "Invalid");
                         System.out.println("⚠️ Authorize: latest IdTagInfo expired for device " + deviceId);
                     }
                 } else {
-                    // No record at all
                     idTagInfo.put("status", "Invalid");
                     System.out.println("❌ Authorize: no IdTagInfo found for device " + deviceId);
                 }
@@ -275,7 +281,7 @@ public class OcppMessageProcessor {
     }
 
     /**
-     * 4. MeterValues Handler
+     * 4. MeterValues Handler – integrates power over time to compute energy
      */
     private ObjectNode handleMeterValues(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
@@ -308,148 +314,74 @@ public class OcppMessageProcessor {
             if (meterValueArray.isArray()) {
                 for (JsonNode meterValue : meterValueArray) {
                     String timestampStr = meterValue.path("timestamp").asText();
+                    LocalDateTime timestamp = LocalDateTime.parse(timestampStr.replace("Z", ""));
                     JsonNode sampledValues = meterValue.path("sampledValue");
 
-                    System.out.println("📊 [DEBUG] Processing timestamp: " + timestampStr);
+                    double power = 0.0;
+                    double voltage = 0.0;
+                    double current = 0.0;
 
                     if (sampledValues.isArray()) {
                         for (JsonNode sample : sampledValues) {
-                            String measurand = sample.path("measurand").asText("Energy.Active.Import.Register");
-                            String value = sample.path("value").asText();
-                            String unit = sample.path("unit").asText("kWh");
-
-                            System.out.println("📊 [DEBUG] Sample - Measurand: " + measurand + ", Value: " + value + ", Unit: " + unit);
-
-                            // Extract numeric value
-                            double numericValue = 0.0;
-                            try {
-                                numericValue = Double.parseDouble(value);
-                            } catch (NumberFormatException e) {
-                                System.err.println("❌ [DEBUG] Invalid value format: " + value);
-                                continue;
+                            String measurand = sample.path("measurand").asText();
+                            double value = sample.path("value").asDouble();
+                            switch (measurand) {
+                                case "Power.Active.Import":
+                                    power = value; // watts
+                                    break;
+                                case "Voltage":
+                                    voltage = value;
+                                    break;
+                                case "Current.Import":
+                                    current = value;
+                                    break;
+                                default:
+                                    // ignore other measurands
                             }
-
-                            // Send real-time data to frontend via WebSocket
-                            Map<String, Object> realtimeData = new HashMap<>();
-                            realtimeData.put("type", "METER_VALUES");
-                            realtimeData.put("idDevice", deviceId);
-                            realtimeData.put("transactionId", transactionId);
-                            realtimeData.put("timestamp", timestampStr);
-
-                            // Add specific measurements
-                            if ("Energy.Active.Import.Register".equals(measurand)) {
-                                realtimeData.put("energy", numericValue);
-                                realtimeData.put("totalConsumption", numericValue);
-
-                                // Update session total consumption
-                                session.setTotalConsumption(numericValue);
-                                chargingSessionRepository.save(session);
-
-                            } else if ("Power.Active.Import".equals(measurand) || "Power.Active.Import.Register".equals(measurand)) {
-                                realtimeData.put("power", numericValue);
-                            } else if ("Voltage".equals(measurand)) {
-                                realtimeData.put("voltage", numericValue);
-                            } else if ("Current.Import".equals(measurand)) {
-                                realtimeData.put("current", numericValue);
-                            } else if ("Temperature".equals(measurand)) {
-                                realtimeData.put("temperature", numericValue);
-                            }
-
-                            // Send to frontend
-                            sendMeterValueToFrontend(realtimeData);
                         }
                     }
+
+                    // Integrate energy
+                    MeterReading last = lastMeterReading.get(transactionId);
+                    if (last != null) {
+                        double durationHours = java.time.Duration.between(last.timestamp, timestamp).toMillis() / 3600000.0;
+                        double energyKwh = last.power * durationHours / 1000.0; // power in W -> kW
+                        double newTotal = session.getTotalConsumption() + energyKwh;
+                        session.setTotalConsumption(newTotal);
+                        chargingSessionRepository.save(session);
+                    }
+                    // Update last reading
+                    lastMeterReading.put(transactionId, new MeterReading(timestamp, power));
+
+                    // Send real-time data to frontend (simplified format)
+                    Map<String, Object> realtimeData = new HashMap<>();
+                    realtimeData.put("type", "METER_VALUES");
+                    realtimeData.put("idDevice", deviceId);
+                    realtimeData.put("transactionId", transactionId);
+                    realtimeData.put("timestamp", timestampStr);
+                    realtimeData.put("power", power);          // in watts
+                    realtimeData.put("voltage", voltage);
+                    realtimeData.put("current", current);
+                    realtimeData.put("totalConsumption", session.getTotalConsumption()); // in kWh
+
+                    messagingTemplate.convertAndSend("/topic/device/" + deviceId, realtimeData);
+                    messagingTemplate.convertAndSend("/topic/charging", realtimeData);
                 }
             }
 
-            return objectMapper.createObjectNode();
+            return objectMapper.createObjectNode(); // empty response
 
         } catch (Exception e) {
             ObjectNode errorResponse = objectMapper.createObjectNode();
             errorResponse.put("status", "Rejected");
+            System.err.println("❌ Error in handleMeterValues: " + e.getMessage());
+            e.printStackTrace();
             return errorResponse;
         }
-
     }
 
     /**
-     * Send meter values to frontend via STOMP
-     */
-    private void sendMeterValueToFrontend(Map<String, Object> meterData) {
-        try {
-            String deviceId = (String) meterData.get("idDevice");
-
-            if (deviceId == null) {
-                System.err.println("❌ [DEBUG] Cannot send meter data: deviceId is null");
-                return;
-            }
-
-            // Create a properly formatted message for frontend
-            Map<String, Object> frontendMessage = new HashMap<>();
-            frontendMessage.put("type", "METER_VALUES");
-            frontendMessage.put("idDevice", deviceId);
-            frontendMessage.put("timestamp", meterData.get("timestamp"));
-
-            // Add sampled values in the format frontend expects
-            List<Map<String, Object>> sampledValues = new ArrayList<>();
-
-            // Add power data if available
-            if (meterData.containsKey("power")) {
-                Map<String, Object> powerSample = new HashMap<>();
-                powerSample.put("value", meterData.get("power").toString());
-                powerSample.put("measurand", "Power.Active.Import");
-                powerSample.put("unit", "kW");
-                sampledValues.add(powerSample);
-            }
-
-            // Add voltage data if available
-            if (meterData.containsKey("voltage")) {
-                Map<String, Object> voltageSample = new HashMap<>();
-                voltageSample.put("value", meterData.get("voltage").toString());
-                voltageSample.put("measurand", "Voltage");
-                voltageSample.put("unit", "V");
-                sampledValues.add(voltageSample);
-            }
-
-            // Add current data if available
-            if (meterData.containsKey("current")) {
-                Map<String, Object> currentSample = new HashMap<>();
-                currentSample.put("value", meterData.get("current").toString());
-                currentSample.put("measurand", "Current.Import");
-                currentSample.put("unit", "A");
-                sampledValues.add(currentSample);
-            }
-
-            // Add energy data if available
-            if (meterData.containsKey("energy")) {
-                Map<String, Object> energySample = new HashMap<>();
-                energySample.put("value", meterData.get("energy").toString());
-                energySample.put("measurand", "Energy.Active.Import.Register");
-                energySample.put("unit", "kWh");
-                sampledValues.add(energySample);
-            }
-
-            // Create meterValue object
-            Map<String, Object> meterValueObj = new HashMap<>();
-            meterValueObj.put("sampledValue", sampledValues);
-            frontendMessage.put("meterValue", meterValueObj);
-
-            System.out.println("📤 [DEBUG] Sending to frontend device " + deviceId + ": " + frontendMessage);
-
-            // Send to device-specific topic
-            messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
-
-            // Also send to general charging topic
-            messagingTemplate.convertAndSend("/topic/charging", frontendMessage);
-
-        } catch (Exception e) {
-            System.err.println("❌ [DEBUG] Error sending meter data to frontend: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 5. StopTransaction Handler
+     * 5. StopTransaction Handler – finalizes session with integrated consumption
      */
     private ObjectNode handleStopTransaction(String deviceId, JsonNode payload) {
         ObjectNode response = objectMapper.createObjectNode();
@@ -457,10 +389,8 @@ public class OcppMessageProcessor {
 
         try {
             Integer transactionId = payload.path("transactionId").asInt();
-            Long meterStop = payload.path("meterStop").asLong();
-            String timestampStr = payload.path("timestamp").asText();
+            // meterStop is ignored – we use the integrated totalConsumption
 
-            // Get session
             var sessionOpt = chargingSessionRepository.findById(transactionId);
             if (sessionOpt.isEmpty()) {
                 idTagInfo.put("status", "Invalid");
@@ -477,50 +407,71 @@ public class OcppMessageProcessor {
                 return response;
             }
 
-            // USE SERVER TIME instead of device timestamp
+            // Finalize session
             LocalDateTime endTime = LocalDateTime.now();
-            System.out.println("⏰ [DEBUG] Using server end time: " + endTime);
-            System.out.println("⏰ [DEBUG] Session start time: " + session.getStartTime());
+            session.setEndTime(endTime);
 
-            // Calculate duration in minutes
+            double consumptionKWh = session.getTotalConsumption();
+            double cost = consumptionKWh * 87.0; // Rs. 87 per kWh
+            session.setAmount(cost);
+            chargingSessionRepository.save(session);
+
+            // Asynchronously call billing API to avoid delaying OCPP response
+            CompletableFuture.runAsync(() -> {
+                try {
+                    Map<String, Object> billingResult = billingService.sendChargingDataToBilling(transactionId);
+                    System.out.println("Billing API call result: " + billingResult);
+
+                    // Send WebSocket message to frontend about billing status
+                    Map<String, Object> billingStatus = new HashMap<>();
+                    billingStatus.put("type", "BILLING_STATUS");
+                    billingStatus.put("success", billingResult.get("success"));
+                    billingStatus.put("message", billingResult.get("message"));
+                    billingStatus.put("transactionId", transactionId);
+                    messagingTemplate.convertAndSend("/topic/device/" + deviceId, billingStatus);
+                    messagingTemplate.convertAndSend("/topic/billing-status", billingStatus);
+
+                } catch (Exception e) {
+                    System.err.println("Failed to call billing API for transaction " + transactionId + ": " + e.getMessage());
+                    // Send failure message
+                    Map<String, Object> billingStatus = new HashMap<>();
+                    billingStatus.put("type", "BILLING_STATUS");
+                    billingStatus.put("success", false);
+                    billingStatus.put("message", "Billing API call failed: " + e.getMessage());
+                    billingStatus.put("transactionId", transactionId);
+                    messagingTemplate.convertAndSend("/topic/device/" + deviceId, billingStatus);
+                    messagingTemplate.convertAndSend("/topic/billing-status", billingStatus);
+                }
+            });
+
+            // Remove from cache
+            lastMeterReading.remove(transactionId);
+
+            // Calculate duration
             long durationMinutes = 0;
             if (session.getStartTime() != null) {
                 durationMinutes = java.time.Duration.between(session.getStartTime(), endTime).toMinutes();
             }
 
-            // Calculate cost at $0.15 per kWh
-            double cost = 0.0;
-            if (meterStop != null) {
-                double consumptionKWh = meterStop.doubleValue();
-                cost = consumptionKWh * 0.15; // $0.15 per kWh
+            System.out.println("💰 Transaction completed:");
+            System.out.println("   - Consumption: " + consumptionKWh + " kWh");
+            System.out.println("   - Duration: " + durationMinutes + " minutes");
+            System.out.println("   - Cost: Rs. " + String.format("%.2f", cost));
 
-                // Update session with final values
-                session.setTotalConsumption(consumptionKWh);
-                session.setAmount(cost);
-                session.setEndTime(endTime);
+            // Send transaction details to frontend
+            Map<String, Object> transactionDetails = new HashMap<>();
+            transactionDetails.put("type", "TRANSACTION_COMPLETED");
+            transactionDetails.put("transactionId", transactionId);
+            transactionDetails.put("idDevice", deviceId);
+            transactionDetails.put("powerConsumed", consumptionKWh);
+            transactionDetails.put("durationMinutes", durationMinutes);
+            transactionDetails.put("cost", String.format("%.2f", cost));
+            transactionDetails.put("startTime", session.getStartTime().toString());
+            transactionDetails.put("endTime", endTime.toString());
+            transactionDetails.put("timestamp", LocalDateTime.now().toString());
 
-                chargingSessionRepository.save(session);
-
-                System.out.println("💰 Transaction completed:");
-                System.out.println("   - Consumption: " + consumptionKWh + " kWh");
-                System.out.println("   - Duration: " + durationMinutes + " minutes");
-                System.out.println("   - Cost: $" + String.format("%.2f", cost));
-
-                // Send transaction details to frontend
-                Map<String, Object> transactionDetails = new HashMap<>();
-                transactionDetails.put("type", "TRANSACTION_COMPLETED");
-                transactionDetails.put("transactionId", transactionId);
-                transactionDetails.put("idDevice", deviceId);
-                transactionDetails.put("powerConsumed", consumptionKWh);
-                transactionDetails.put("durationMinutes", durationMinutes);
-                transactionDetails.put("cost", String.format("%.2f", cost));
-                transactionDetails.put("startTime", session.getStartTime().toString());
-                transactionDetails.put("endTime", endTime.toString());
-                transactionDetails.put("timestamp", LocalDateTime.now().toString());
-
-                messagingTemplate.convertAndSend("/topic/device/" + deviceId, transactionDetails);
-                messagingTemplate.convertAndSend("/topic/charging", transactionDetails);
-            }
+            messagingTemplate.convertAndSend("/topic/device/" + deviceId, transactionDetails);
+            messagingTemplate.convertAndSend("/topic/charging", transactionDetails);
 
             idTagInfo.put("status", "Accepted");
             response.set("idTagInfo", idTagInfo);
@@ -529,10 +480,10 @@ public class OcppMessageProcessor {
             idTagInfo.put("status", "InternalError");
             response.set("idTagInfo", idTagInfo);
             System.err.println("❌ Error in handleStopTransaction: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return response;
-
     }
 
     /**
@@ -551,7 +502,6 @@ public class OcppMessageProcessor {
         ObjectNode response = objectMapper.createObjectNode();
         try {
             String status = payload.path("status").asText();
-            // Update smart_plug status
             smartPlugRepository.findById(deviceId).ifPresent(plug -> {
                 plug.setStatus(status);
                 smartPlugRepository.save(plug);
@@ -564,19 +514,18 @@ public class OcppMessageProcessor {
     }
 
     private String handleCallResult(String deviceId, String messageId, JsonNode payload) {
-        // Handle responses to our calls (like RemoteStartTransaction.conf)
-        // You can implement callback logic here
+        // Not used in this version
         return null;
     }
 
     private String handleCallError(String deviceId, String messageId, JsonNode payload) {
-        // Handle error responses
+        // Not used in this version
         return null;
     }
 
     private String createCallResult(String messageId, JsonNode payload) {
         ArrayNode response = objectMapper.createArrayNode();
-        response.add(3); // MessageTypeId for CALLRESULT
+        response.add(3);
         response.add(messageId);
         response.add(payload);
         return response.toString();
@@ -584,20 +533,18 @@ public class OcppMessageProcessor {
 
     private String createError(String errorCode, String errorDescription, String messageId) {
         ArrayNode response = objectMapper.createArrayNode();
-        response.add(4); // MessageTypeId for CALLERROR
+        response.add(4);
         response.add(messageId != null ? messageId : "");
         response.add(errorCode);
         response.add(errorDescription);
-        response.add(objectMapper.createObjectNode()); // Empty error details
+        response.add(objectMapper.createObjectNode());
         return response.toString();
     }
 
     private ObjectNode createErrorPayload(String status, String message) {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("status", status);
-        if (message != null) {
-            payload.put("message", message);
-        }
+        if (message != null) payload.put("message", message);
         return payload;
     }
 
@@ -613,8 +560,7 @@ public class OcppMessageProcessor {
             log.setReceivedAt(LocalDateTime.now());
             messageLogRepository.save(log);
         } catch (Exception e) {
-            // Silent fail on logging errors
+            // silent fail
         }
     }
-
 }
