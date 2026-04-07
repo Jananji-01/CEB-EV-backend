@@ -3,7 +3,12 @@ package com.example.EVProject.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class AdminEvOwnerBasicDTO {
     private String accountNo;         // ev_owner.e_account_number
