@@ -1,21 +1,20 @@
 package com.example.EVProject.model;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.Set;
 
 @Getter
 @Setter
-@Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "APP_USER")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -36,7 +35,7 @@ public class User {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "USER_ROLES",
+            name = "user_roles",
             joinColumns = @JoinColumn(name = "username"),  // FK to user.username
             inverseJoinColumns = @JoinColumn(name = "role_id") // FK to role.id
     )

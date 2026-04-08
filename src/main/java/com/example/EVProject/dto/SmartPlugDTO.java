@@ -12,8 +12,8 @@ public class SmartPlugDTO {
     private String idDevice;
     private String cebSerialNo;
     private Double maximumOutput;
-    private String accountNumber;
-    private Integer stationId;
+    private String accountNumber; 
+    private Integer stationId;  
     
     // Charging point information (for registration)
     private String chargePointModel;
@@ -58,14 +58,6 @@ public class SmartPlugDTO {
 
     public void setMaximumOutput(Double maximumOutput) {
         this.maximumOutput = maximumOutput;
-    }
-
-    public Integer getStationId() {
-        return stationId;
-    }
-
-    public void setStationId(Integer stationId) {
-        this.stationId = stationId;
     }
 
     public String getChargePointModel() {

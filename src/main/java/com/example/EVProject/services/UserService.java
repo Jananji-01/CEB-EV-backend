@@ -16,7 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -55,11 +59,10 @@ public class UserService {
     }
 
     public User createUser(RegistrationRequest req) {
-        // Use the native query methods
-        if (userRepository.existsByUsernameNative(req.getUsername()) > 0) {
+        if (userRepository.existsByUsername(req.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
-        if (userRepository.existsByEmailNative(req.getEmail()) > 0) {
+        if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
@@ -71,7 +74,7 @@ public class UserService {
         user.setEnabled(false);
 
         Role roleEntity = roleRepository.findByName("ROLE_" + req.getRole().toUpperCase())
-                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_" + req.getRole().toUpperCase()));
+                .orElseThrow(() -> new RuntimeException("Role not found"));
         user.setRoles(Collections.singleton(roleEntity));
 
         System.out.println("ROLE from request = " + req.getRole());
@@ -84,7 +87,6 @@ public class UserService {
                 evOwner.setUsername(savedUser.getUsername());
                 evOwner.setEAccountNumber(req.getE_account_number());
                 evOwner.setMobileNumber(req.getMobile_number());
-                // Fix: Use the correct getter name with underscores
                 evOwner.setNoOfVehiclesOwned(req.getNo_of_vehicles_owned());
                 // Generate unique ID tag
                 String idTag = "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -112,18 +114,15 @@ public class UserService {
         User user = userRepository.findById(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Update email (check uniqueness)
         if (!user.getEmail().equals(userDTO.getEmail()) &&
-                userRepository.existsByEmailNative(userDTO.getEmail()) > 0) {
+                userRepository.existsByEmail(userDTO.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
-        user.setEmail(userDTO.getEmail());
 
-        // ✅ Password is required → always encode & update
-        if (userDTO.getPassword() == null || userDTO.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required");
+        user.setEmail(userDTO.getEmail());
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         }
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
         return userRepository.save(user);
     }
@@ -184,54 +183,5 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         generateAndSendOtp(user);
     }
-
-    //create admin
-    public User createAdminUser(RegistrationRequest req) {
-
-        if (userRepository.existsByUsernameNative(req.getUsername()) > 0) {
-            throw new RuntimeException("Username already exists");
-        }
-
-        if (userRepository.existsByEmailNative(req.getEmail()) > 0) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        User user = new User();
-        user.setUsername(req.getUsername());
-        user.setEmail(req.getEmail());
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
-
-        // ✅ NO OTP → directly enable
-        user.setEnabled(true);
-
-        // ✅ Assign ADMIN role
-        Role roleEntity = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Role not found"));
-
-        user.setRoles(Collections.singleton(roleEntity));
-
-        return userRepository.save(user);
-    }
-
-    public Map<String, Long> getUserRoleCounts() {
-        List<Object[]> results = userRepository.countUsersByRole();
-
-        long admins = 0, evOwners = 0, solarOwners = 0;
-
-        for (Object[] row : results) {
-            String roleName = (String) row[0];
-            long count = (Long) row[1];
-
-            if (roleName.equals("ROLE_ADMIN")) admins = count;
-            else if (roleName.equals("ROLE_EVOWNER")) evOwners = count;
-            else if (roleName.equals("ROLE_SOLAROWNER")) solarOwners = count;
-        }
-
-        Map<String, Long> map = new HashMap<>();
-        map.put("admins", admins);
-        map.put("evOwners", evOwners);
-        map.put("solarOwners", solarOwners);
-
-        return map;
-    }
+    
 }

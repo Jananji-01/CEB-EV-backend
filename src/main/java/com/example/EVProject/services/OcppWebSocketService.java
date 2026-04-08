@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
@@ -20,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class OcppWebSocketService {
     
-    private final SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
     
     @Autowired
     private OcppWebSocketSessionRepository sessionRepository;
@@ -31,11 +31,6 @@ public class OcppWebSocketService {
     private final Map<String, WebSocketSession> deviceSessions = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToDevice = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-        // Constructor injection
-    public OcppWebSocketService(@Lazy SimpMessagingTemplate messagingTemplate) {
-        this.messagingTemplate = messagingTemplate;
-    }
     
     /**
      * Handle new WebSocket connection
@@ -211,21 +206,4 @@ public class OcppWebSocketService {
         return 0.0;
     }
 
-    // Temporary storage for EV owner account numbers keyed by idTag
-    private final Map<String, String> deviceEvOwnerAccounts = new ConcurrentHashMap<>();
-
-    public void storeEvOwnerAccountByDeviceId(String deviceId, String evOwnerAccountNo) {
-        if (deviceId != null && evOwnerAccountNo != null) {
-            deviceEvOwnerAccounts.put(deviceId, evOwnerAccountNo);
-            System.out.println("💾 Stored EV owner account for device " + deviceId + ": " + evOwnerAccountNo);
-        }
-    }
-
-    public String retrieveEvOwnerAccountByDeviceId(String deviceId) {
-        return deviceEvOwnerAccounts.remove(deviceId); // one‑time use
-    }
-
-    public void removeEvOwnerAccountByDeviceId(String deviceId) {
-        deviceEvOwnerAccounts.remove(deviceId);
-    }
 }

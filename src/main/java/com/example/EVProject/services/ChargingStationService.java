@@ -34,6 +34,20 @@ public class ChargingStationService {
         return convertToDto(saved);
     }
 
+    private ChargingStation convertToEntity(ChargingStationDTO dto) {
+        ChargingStation station = new ChargingStation();
+        station.setStationId(dto.getStationId());
+        station.setStationName(dto.getStationName());  
+        station.setLatitude(dto.getLatitude());
+        station.setLongitude(dto.getLongitude());
+        station.setSolarPowerAvailable(dto.getSolarPowerAvailable());
+        station.setStatus(dto.getStatus());
+        station.setErrorCode(dto.getErrorCode());
+        station.setTimestamp(dto.getTimestamp());
+        station.setSolarOwnerId(dto.getSolarOwnerId());
+        return station;
+    }
+
     public void deleteStation(Integer id) {
         repository.deleteById(id);
     }
@@ -78,30 +92,13 @@ public class ChargingStationService {
     private ChargingStationDTO convertToDto(ChargingStation station) {
         ChargingStationDTO dto = new ChargingStationDTO();
         dto.setStationId(station.getStationId());
-        dto.setStationName(station.getStationName());        // ADD THIS
+        dto.setStationName(station.getStationName());
         dto.setLatitude(station.getLatitude());
         dto.setLongitude(station.getLongitude());
         dto.setSolarPowerAvailable(station.getSolarPowerAvailable());
         dto.setStatus(station.getStatus());
-        dto.setErrorCode(station.getErrorCode());            // ADD THIS
-        dto.setTimestampCol(station.getTimestamp());            // ADD THIS
         dto.setSolarOwnerId(station.getSolarOwnerId());
-        dto.setIdDevice(station.getIdDevice());              // ADD THIS
         return dto;
     }
 
-    private ChargingStation convertToEntity(ChargingStationDTO dto) {
-        ChargingStation station = new ChargingStation();
-        station.setStationId(dto.getStationId());
-        station.setStationName(dto.getStationName());        // ADD THIS
-        station.setLatitude(dto.getLatitude());
-        station.setLongitude(dto.getLongitude());
-        station.setSolarPowerAvailable(dto.getSolarPowerAvailable());
-        station.setStatus(dto.getStatus());
-        station.setErrorCode(dto.getErrorCode());            // ADD THIS
-        station.setTimestamp(dto.getTimestampCol());            // ADD THIS
-        station.setSolarOwnerId(dto.getSolarOwnerId());
-        station.setIdDevice(dto.getIdDevice());              // ADD THIS
-        return station;
-    }
 }

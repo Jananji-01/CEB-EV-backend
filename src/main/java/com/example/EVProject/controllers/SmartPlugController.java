@@ -1,6 +1,6 @@
 package com.example.EVProject.controllers;
 
-import com.example.EVProject.dto.AssignSmartPlugRequestDTO;
+import com.example.EVProject.dto.AssignSmartPlugRequest;
 import com.example.EVProject.dto.SmartPlugDTO;
 import com.example.EVProject.services.SmartPlugService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ public class SmartPlugController {
     @PostMapping("/{idDevice}/assign")
     public ResponseEntity<?> assignSmartPlugToStation(
             @PathVariable String idDevice,
-            @RequestBody AssignSmartPlugRequestDTO request) {
+            @RequestBody AssignSmartPlugRequest request) {
         try {
             SmartPlugDTO assigned = service.assignToStation(idDevice, request);
             return ResponseEntity.ok(assigned);

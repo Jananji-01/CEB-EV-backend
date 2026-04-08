@@ -13,12 +13,12 @@ public class ChargingStationDTO {
     private Integer stationId;
     private Double latitude;
     private Double longitude;
+    private String stationName;
     private Double solarPowerAvailable;
     private String status;
     private String errorCode;
-    private LocalDateTime timestampCol; 
+    private LocalDateTime timestamp; 
     private Integer solarOwnerId;
-    private String stationName;
     private String idDevice;
 
     // getters and setters
@@ -79,12 +79,12 @@ public class ChargingStationDTO {
         this.solarOwnerId = solarOwnerId;
     }
 
-    public LocalDateTime getTimestampCol() { 
-        return timestampCol; 
+    public LocalDateTime getTimestamp() { 
+        return timestamp; 
     }
 
-    public void setTimestampCol(LocalDateTime timestampCol) { 
-        this.timestampCol = timestampCol; 
+    public void setTimestamp(LocalDateTime timestamp) { 
+        this.timestamp = timestamp; 
     }
 
     public String getIdDevice() { 

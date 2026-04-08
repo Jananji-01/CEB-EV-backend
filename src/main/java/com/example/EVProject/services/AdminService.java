@@ -23,32 +23,8 @@ public class AdminService {
     @Autowired
     private UserService userService;
 
-    // Return minimal data
-    public List<AdminDTO> getAllAdminsWithEmail() {
-        return adminRepository.findAll().stream()
-                .map(admin -> {
-                    AdminDTO dto = new AdminDTO();
-                    dto.setAdminId(admin.getAdminId());
-                    dto.setUsername(admin.getUsername());
-                    if(admin.getUser() != null) {
-                        dto.setEmail(admin.getUser().getEmail());
-                    }
-                    return dto;
-                })
-                .toList();
-    }
-
-    public Optional<AdminDTO> getAdminByIdWithEmail(Integer adminId) {
-        return adminRepository.findById(adminId)
-                .map(admin -> {
-                    AdminDTO dto = new AdminDTO();
-                    dto.setAdminId(admin.getAdminId());
-                    dto.setUsername(admin.getUsername());
-                    if(admin.getUser() != null) {
-                        dto.setEmail(admin.getUser().getEmail()); // <-- includes email
-                    }
-                    return dto;
-                });
+    public List<Admin> getAllAdmins() {
+        return adminRepository.findAll();
     }
 
     public Optional<Admin> getAdminById(Integer adminId) {
@@ -59,37 +35,18 @@ public class AdminService {
         return adminRepository.findByUsername(username);
     }
 
-//    public Admin createAdmin(AdminDTO adminDTO) {
-//        if (adminRepository.existsByUsername(adminDTO.getUsername())) {
-//            throw new RuntimeException("Admin with this username already exists");
-//        }
-//
-//        // Create user first
-//        User user = userService.createUser(convertToUserDTO(adminDTO));
-//
-//        // Create admin
-//        Admin admin = new Admin();
-//        admin.setUsername(adminDTO.getUsername());
-//        admin.setUser(user);
-//
-//        return adminRepository.save(admin);
-//    }
+    public Admin createAdmin(AdminDTO adminDTO) {
+        if (adminRepository.existsByUsername(adminDTO.getUsername())) {
+            throw new RuntimeException("Admin with this username already exists");
+        }
 
-    //create admin
-    public Admin createAdmin(AdminDTO dto) {
+        // Create user first
+        User user = userService.createUser(convertToUserDTO(adminDTO));
 
-        // 1️⃣ Create user in APP_USER
-        RegistrationRequest req = new RegistrationRequest();
-        req.setUsername(dto.getUsername());
-        req.setEmail(dto.getEmail());
-        req.setPassword(dto.getPassword());
-        req.setRole("ADMIN");
-
-        User user = userService.createAdminUser(req);
-
-        // 2️⃣ Insert into ADMIN table
+        // Create admin
         Admin admin = new Admin();
-        admin.setUsername(user.getUsername());
+        admin.setUsername(adminDTO.getUsername());
+        admin.setUser(user);
 
         return adminRepository.save(admin);
     }
@@ -98,26 +55,10 @@ public class AdminService {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        String originalUsername = admin.getUsername();
+        // Update user information
+        userService.updateUser(admin.getUsername(), convertToUserDTO(adminDTO));
 
-        if (adminDTO.getPassword() == null || adminDTO.getPassword().isBlank()) {
-            throw new RuntimeException("Password is required for update");
-        }
-
-        // Update User (password & email required)
-        RegistrationRequest req = new RegistrationRequest();
-        req.setUsername(originalUsername); // username in User table cannot change
-        req.setEmail(adminDTO.getEmail());
-        req.setPassword(adminDTO.getPassword()); // required
-
-        userService.updateUser(originalUsername, req);
-
-        // Update Admin username if changed
-        if (!originalUsername.equals(adminDTO.getUsername())) {
-            admin.setUsername(adminDTO.getUsername());
-        }
-
-        return adminRepository.save(admin);
+        return admin;
     }
 
     public void deleteAdmin(Integer adminId) {
