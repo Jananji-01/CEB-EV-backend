@@ -2,7 +2,7 @@ package com.example.EVProject.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -18,7 +18,9 @@ import java.time.OffsetDateTime;
 public class MonthlyConsumption {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "monthly_consumption_seq")
+    @SequenceGenerator(name = "monthly_consumption_seq", sequenceName = "MONTHLY_CONSUMPTION_SEQ", allocationSize = 1)
+    @Column(name = "id")
     private Long id;
 
     @Column(nullable = false)
@@ -46,5 +48,5 @@ public class MonthlyConsumption {
     private Integer totalDurationMinutes;
 
     @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 }

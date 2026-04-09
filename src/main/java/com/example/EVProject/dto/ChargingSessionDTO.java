@@ -17,7 +17,7 @@ public class ChargingSessionDTO {
     private Double totalConsumption;
     private Double amount;
     private String idDevice;
-    private String evOwnerAccountNo; 
+    private String eAccountNo; 
     private Long meterStart;
     
     // Optional: Add status field if needed for frontend

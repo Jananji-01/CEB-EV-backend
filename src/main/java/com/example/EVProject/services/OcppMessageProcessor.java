@@ -336,7 +336,7 @@
 //             session.setTotalConsumption(0.0);
 //             session.setAmount(0.0);
 //             session.setSoc(0.0);
-//             session.setEvOwnerAccountNo(evOwnerAccountNo);
+//             session.setEAccountNo(eAccountNo);
 
 //             ChargingSession savedSession = chargingSessionRepository.save(session);
 
@@ -1136,11 +1136,11 @@ public class OcppMessageProcessor {
             }
 
             // Retrieve EV owner account number using the idTag
-            String evOwnerAccountNo = null;
+            String eAccountNo = null;
             Optional<EvOwner> ownerOpt = evOwnerRepository.findByIdTag(idTag);
             if (ownerOpt.isPresent()) {
-                evOwnerAccountNo = ownerOpt.get().getEAccountNumber();
-                System.out.println("💾 [OCPP] Found owner account " + evOwnerAccountNo + " for idTag " + idTag);
+                eAccountNo = ownerOpt.get().getEAccountNumber();
+                System.out.println("💾 [OCPP] Found owner account " + eAccountNo + " for idTag " + idTag);
             } else {
                 System.out.println("⚠️ [OCPP] No EV owner found for idTag " + idTag);
             }
@@ -1153,7 +1153,7 @@ public class OcppMessageProcessor {
             session.setTotalConsumption(0.0);
             session.setAmount(0.0);
             session.setSoc(0.0);
-            session.setEvOwnerAccountNo(evOwnerAccountNo);
+            session.setEAccountNo(eAccountNo);
 
             ChargingSession savedSession = chargingSessionRepository.save(session);
 

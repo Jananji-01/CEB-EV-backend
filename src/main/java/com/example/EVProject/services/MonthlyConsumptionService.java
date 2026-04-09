@@ -28,7 +28,7 @@ public class MonthlyConsumptionService {
 
     public MonthlyConsumptionResponse calculateAndStore(MonthlyConsumptionRequest req) {
         String username = req.getUsername();
-        String eAccountNumber = req.getAccountNumber(); // this is e_account_number
+        String eAccountNumber = req.getEAccountNumber(); // this is e_account_number
 
         if (username == null || eAccountNumber == null) {
             throw new IllegalArgumentException("Username and account number are required");
