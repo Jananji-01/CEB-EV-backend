@@ -8,7 +8,7 @@ import lombok.*;
 @Builder
 public class MonthlyConsumptionResponse {
     private String username;
-    private String accountNumber;
+    private String eAccountNumber;
     private String idDevice;
     private Integer month;
     private Integer year;

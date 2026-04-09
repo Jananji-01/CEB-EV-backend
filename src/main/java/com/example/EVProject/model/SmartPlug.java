@@ -95,6 +95,9 @@ public class SmartPlug {
     @Column(name = "E_ACCOUNT_NUMBER")
     private String accountNumber;
 
+    @Column(name = "username")
+    private String username;
+
     @ManyToOne
     @JoinColumn(name = "station_id", referencedColumnName = "station_id", insertable = false, updatable = false)
     private ChargingStation chargingStation;
@@ -119,5 +122,12 @@ public class SmartPlug {
     public void setQrCodeGeneratedAt(LocalDateTime qrCodeGeneratedAt) {
         this.qrCodeGeneratedAt = qrCodeGeneratedAt;
     }
-}
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+}
