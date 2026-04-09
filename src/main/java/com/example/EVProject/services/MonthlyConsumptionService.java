@@ -28,9 +28,9 @@ public class MonthlyConsumptionService {
 
     public MonthlyConsumptionResponse calculateAndStore(MonthlyConsumptionRequest req) {
         String username = req.getUsername();
-        String accountNo = req.getAccountNumber(); // this is ev_owner_account_no
+        String eAccountNumber = req.getAccountNumber(); // this is e_account_number
 
-        if (username == null || accountNo == null) {
+        if (username == null || eAccountNumber == null) {
             throw new IllegalArgumentException("Username and account number are required");
         }
 
@@ -39,10 +39,10 @@ public class MonthlyConsumptionService {
         int year  = (req.getYear()  != null) ? req.getYear()  : now.getYear();
 
         // Aggregate from charging_sessions using ev_owner_account_no
-        Integer totalSessions = sessionRepo.countMonthlySessionsByOwner(accountNo, month, year);
-        Double totalConsumption = sessionRepo.sumMonthlyConsumptionByOwner(accountNo, month, year);
-        Double durationDouble = sessionRepo.sumMonthlyDurationMinutesByOwner(accountNo, month, year);
-        Double totalAmount = sessionRepo.sumMonthlyAmountByOwner(accountNo, month, year);
+        Integer totalSessions = sessionRepo.countMonthlySessionsByOwner(eAccountNumber, month, year);
+        Double totalConsumption = sessionRepo.sumMonthlyConsumptionByOwner(eAccountNumber, month, year);
+        Double durationDouble = sessionRepo.sumMonthlyDurationMinutesByOwner(eAccountNumber, month, year);
+        Double totalAmount = sessionRepo.sumMonthlyAmountByOwner(eAccountNumber, month, year);
 
         if (totalSessions == null) totalSessions = 0;
         if (totalConsumption == null) totalConsumption = 0.0;
@@ -53,7 +53,7 @@ public class MonthlyConsumptionService {
         // Return response (storage in monthly_consumption is skipped for now)
         return MonthlyConsumptionResponse.builder()
                 .username(username)
-                .accountNumber(accountNo)
+                .eAccountNumber(eAccountNumber)
                 .idDevice("ALL") // placeholder, not used by frontend
                 .month(month)
                 .year(year)
