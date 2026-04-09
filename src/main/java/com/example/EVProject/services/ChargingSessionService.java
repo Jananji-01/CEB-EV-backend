@@ -4,8 +4,12 @@ import com.example.EVProject.dto.ChargingSessionDTO;
 import com.example.EVProject.dto.ChargingStationDTO;
 import com.example.EVProject.dto.SolarOwnerConsumptionDTO;
 import com.example.EVProject.model.ChargingSession;
+import com.example.EVProject.model.MonthlyConsumption;
+import com.example.EVProject.model.SmartPlug;
 import com.example.EVProject.repositories.ChargingSessionRepository;
 import com.example.EVProject.repositories.ChargingStationRepository;
+import com.example.EVProject.repositories.MonthlyConsumptionRepository;
+import com.example.EVProject.repositories.SmartPlugRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +27,12 @@ public class ChargingSessionService {
 
     @Autowired
     private ChargingStationRepository repo;
+
+    @Autowired
+    private MonthlyConsumptionRepository monthlyConsumptionRepository;
+
+    @Autowired
+    private SmartPlugRepository smartPlugRepository;
 
     public List<ChargingSessionDTO> getAllSessions() {
         // make sure you call stream() properly
@@ -73,7 +83,7 @@ public class ChargingSessionService {
         dto.setTotalConsumption(session.getTotalConsumption());
         dto.setAmount(session.getAmount());
         dto.setIdDevice(session.getIdDevice());
-        dto.setEvOwnerAccountNo(session.getEvOwnerAccountNo());
+        dto.setEAccountNo(session.getEAccountNo());
         dto.setMeterStart(session.getMeterStart());
         dto.setStatus(session.getStatus()); 
         
@@ -96,7 +106,7 @@ public class ChargingSessionService {
         session.setTotalConsumption(dto.getTotalConsumption());
         session.setAmount(dto.getAmount());
         session.setIdDevice(dto.getIdDevice());
-        session.setEvOwnerAccountNo(dto.getEvOwnerAccountNo());
+        session.setEAccountNo(dto.getEAccountNo());
         session.setMeterStart(dto.getMeterStart());
         session.setStatus(dto.getStatus());
         return session;
@@ -118,7 +128,7 @@ public class ChargingSessionService {
                 .collect(Collectors.toList());
     }
 
-    public Integer startNewChargingSession(String idDevice, String idTag, Integer connectorId, Long meterStart, String evOwnerAccountNo) {
+    public Integer startNewChargingSession(String idDevice, String idTag, Integer connectorId, Long meterStart, String eAccountNo) {
         // 1️⃣ Check for existing active session
         Optional<ChargingSession> activeSession = repository.findByIdDeviceAndEndTimeIsNull(idDevice);
         if (activeSession.isPresent()) {
@@ -133,7 +143,7 @@ public class ChargingSessionService {
         session.setTotalConsumption(0.0);
         session.setAmount(0.0);
         session.setSoc(0.0);
-        session.setEvOwnerAccountNo(evOwnerAccountNo);
+        session.setEAccountNo(eAccountNo);
         session.setMeterStart(meterStart);  // ← Store the starting meter value
         
         System.out.println("Session created with meterStart: " + meterStart);
@@ -179,12 +189,14 @@ public class ChargingSessionService {
         LocalDateTime endTime = LocalDateTime.now();
         System.out.println("Setting end_time to CURRENT TIME: " + endTime);
         session.setEndTime(endTime);
+
+         double consumption = 0.0;
         
         // ✅ Calculate total consumption correctly
         if (meterStop != null) {
             if (session.getMeterStart() != null) {
                 // Calculate actual consumption by subtracting meterStart from meterStop
-                double consumption = (double) (meterStop - session.getMeterStart());
+                consumption = (double) (meterStop - session.getMeterStart());
                 session.setTotalConsumption(consumption);
                 
                 // Calculate amount based on consumption (example: $0.15 per kWh)
@@ -214,6 +226,9 @@ public class ChargingSessionService {
         System.out.println("✅ Total consumption: " + savedSession.getTotalConsumption());
         System.out.println("✅ Amount: $" + String.format("%.2f", savedSession.getAmount()));
         System.out.println("✅ Status: " + savedSession.getStatus());
+
+        // ✅ UPDATE MONTHLY CONSUMPTION TABLE
+        updateMonthlyConsumption(session, consumption, endTime);
         
         // Verify by fetching fresh from database
         var verifySession = repository.findById(transactionId);
@@ -223,4 +238,101 @@ public class ChargingSessionService {
         
         System.out.println("=== endChargingSession completed ===");
     }
+
+        private void updateMonthlyConsumption(ChargingSession session, double consumption, LocalDateTime endTime) {
+        try {
+            // Get month and year from the end time
+            int month = endTime.getMonthValue();
+            int year = endTime.getYear();
+            
+            // Use getUsernameFromIdDevice instead
+            String username = getUsernameFromIdDevice(session.getIdDevice());
+            if (username == null || username.isEmpty()) {
+                username = session.getIdDevice(); // Use idDevice as fallback
+            }
+            
+            // Get eAccountNumber - provide fallback
+            String eAccountNumber = session.getEAccountNo();
+            if (eAccountNumber == null || eAccountNumber.isEmpty()) {
+                eAccountNumber = "UNKNOWN_" + session.getIdDevice(); // Generate a fallback value
+            }
+            
+            System.out.println("=== Updating Monthly Consumption ===");
+            System.out.println("Username: " + username);
+            System.out.println("IdDevice: " + session.getIdDevice());
+            System.out.println("Month: " + month + ", Year: " + year);
+            System.out.println("Consumption to add: " + consumption + " kWh");
+            
+            // Calculate duration in minutes (if start time is available)
+            int durationMinutes = 0;
+            if (session.getStartTime() != null && endTime != null) {
+                durationMinutes = (int) java.time.Duration.between(session.getStartTime(), endTime).toMinutes();
+                System.out.println("Duration minutes: " + durationMinutes);
+            }
+            
+            // Find existing monthly consumption record
+            Optional<MonthlyConsumption> existingOpt = monthlyConsumptionRepository
+                    .findByUsernameAndIdDeviceAndMonthAndYear(
+                            username, 
+                            session.getIdDevice(), 
+                            month, 
+                            year
+                    );
+            
+            if (existingOpt.isPresent()) {
+                // Update existing record
+                MonthlyConsumption mc = existingOpt.get();
+                double newTotalConsumption = mc.getTotalConsumption() + consumption;
+                int newTotalSessions = mc.getTotalSessions() + 1;
+                int newTotalDuration = mc.getTotalDurationMinutes() + durationMinutes;
+                
+                mc.setTotalConsumption(newTotalConsumption);
+                mc.setTotalSessions(newTotalSessions);
+                mc.setTotalDurationMinutes(newTotalDuration);
+                mc.setCreatedAt(LocalDateTime.now());
+                
+                monthlyConsumptionRepository.save(mc);
+                System.out.println("✅ Updated existing monthly consumption record");
+                System.out.println("   New total consumption: " + newTotalConsumption + " kWh");
+                System.out.println("   Total sessions: " + newTotalSessions);
+                System.out.println("   Total duration: " + newTotalDuration + " minutes");
+            } else {
+                // Create new record
+                MonthlyConsumption mc = new MonthlyConsumption();
+                mc.setUsername(username);
+                mc.setIdDevice(session.getIdDevice());
+                mc.setMonth(month);
+                mc.setYear(year);
+                mc.setTotalConsumption(consumption);
+                mc.setTotalSessions(1);
+                mc.setTotalDurationMinutes(durationMinutes);
+                mc.setCreatedAt(LocalDateTime.now());
+                mc.setEAccountNumber(session.getEAccountNo());
+                
+                monthlyConsumptionRepository.save(mc);
+                System.out.println("✅ Created new monthly consumption record");
+                System.out.println("   Total consumption: " + consumption + " kWh");
+                System.out.println("   Sessions: 1");
+                System.out.println("   Duration: " + durationMinutes + " minutes");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error updating monthly consumption: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+        private String getUsernameFromIdDevice(String idDevice) {
+            try {
+                // Fetch username from SmartPlug table
+                Optional<SmartPlug> plugOpt = smartPlugRepository.findById(idDevice);
+                if (plugOpt.isPresent() && plugOpt.get().getUsername() != null) {
+                    return plugOpt.get().getUsername();
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching username for idDevice: " + idDevice);
+            }
+            // Return idDevice as fallback if username not found
+            return idDevice;
+        }
 }

@@ -100,10 +100,10 @@ public class BillingService {
             */
 
             // 5. EV owner account (stored in session) – fallback if missing, but sample matches
-            String evOwnerAccountNo = session.getEvOwnerAccountNo() != null ? session.getEvOwnerAccountNo() : "";
-            if (evOwnerAccountNo.isEmpty()) {
+            String eAccountNo = session.getEAccountNo() != null ? session.getEAccountNo() : "";
+            if (eAccountNo.isEmpty()) {
                 logger.warn("ElectricVehicle_AccountNo is empty. Using fallback: {}", SAMPLE_EV_OWNER_ACCOUNT);
-                evOwnerAccountNo = SAMPLE_EV_OWNER_ACCOUNT;
+                eAccountNo = SAMPLE_EV_OWNER_ACCOUNT;
             }
 
             // 6. Energy consumption – use real value, fallback if zero
@@ -121,7 +121,7 @@ public class BillingService {
             // 8. Build DTO with final values
             requestDto = new SmartPlugBillingRequest(
                     plugOwnerAccountNo,
-                    evOwnerAccountNo,
+                    eAccountNo,
                     startTimeStr,
                     endTimeStr,
                     consumption,
@@ -135,7 +135,7 @@ public class BillingService {
             // Log the final request fields
             logger.info("Final billing request:");
             logger.info("  PlugOwner_AccountNo: '{}'", plugOwnerAccountNo);
-            logger.info("  ElectricVehicle_AccountNo: '{}'", evOwnerAccountNo);
+            logger.info("  ElectricVehicle_AccountNo: '{}'", eAccountNo);
             logger.info("  Charging_StartTime: {}", startTimeStr);
             logger.info("  Charging_EndTime: {}", endTimeStr);
             logger.info("  kWh_Utilised: {}", consumption);

@@ -1167,7 +1167,7 @@ public class ChargingStationController {
 
             Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag);
             String status = "Invalid";
-            String evOwnerAccountNo = null;
+            String eAccountNumber = null;
             
             if (tagOpt.isPresent()) {
                 IdTagInfo tag = tagOpt.get();
@@ -1177,8 +1177,8 @@ public class ChargingStationController {
                 if ("Accepted".equalsIgnoreCase(status)) {
                     Optional<EvOwner> ownerOpt = evOwnerRepository.findByIdTag(idTag);
                     if (ownerOpt.isPresent()) {
-                        evOwnerAccountNo = ownerOpt.get().getEAccountNumber();
-                        System.out.println("✅ Found EV Owner: " + evOwnerAccountNo + " for idTag: " + idTag);
+                        eAccountNumber = ownerOpt.get().getEAccountNumber();
+                        System.out.println("✅ Found EV Owner: " + eAccountNumber + " for idTag: " + idTag);
                     } else {
                         System.out.println("⚠️ No EV Owner found for idTag: " + idTag);
                     }
@@ -1200,7 +1200,7 @@ public class ChargingStationController {
                                 idTag,              // idTag
                                 connectorId,        // connectorId
                                 meterStart,         // meterStart
-                                evOwnerAccountNo    // evOwnerAccountNo
+                                eAccountNumber    // eAccountNumber
                         );
                     }
                 } catch (Exception e) {

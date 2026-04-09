@@ -100,7 +100,7 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
 
         @Query(value = """
                 SELECT COUNT(*) FROM charging_sessions 
-                WHERE ev_owner_account_no = :accountNo 
+                WHERE e_account_number = :accountNo 
                 AND EXTRACT(MONTH FROM start_time) = :month 
                 AND EXTRACT(YEAR FROM start_time) = :year
                 """, nativeQuery = true)
@@ -110,7 +110,7 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
 
         @Query(value = """
                 SELECT COALESCE(SUM(total_consumption), 0) FROM charging_sessions 
-                WHERE ev_owner_account_no = :accountNo 
+                WHERE e_account_number = :accountNo 
                 AND EXTRACT(MONTH FROM start_time) = :month 
                 AND EXTRACT(YEAR FROM start_time) = :year
                 """, nativeQuery = true)
@@ -121,7 +121,7 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
         @Query(value = """
                 SELECT COALESCE(SUM((CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 24 * 60), 0)
                 FROM charging_sessions 
-                WHERE ev_owner_account_no = :accountNo 
+                WHERE e_account_number = :accountNo 
                 AND end_time IS NOT NULL 
                 AND start_time IS NOT NULL
                 AND EXTRACT(MONTH FROM start_time) = :month 
@@ -133,7 +133,7 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
         
         @Query(value = """
                 SELECT COALESCE(SUM(amount), 0) FROM charging_sessions 
-                WHERE ev_owner_account_no = :accountNo 
+                WHERE e_account_number = :accountNo 
                 AND EXTRACT(MONTH FROM start_time) = :month 
                 AND EXTRACT(YEAR FROM start_time) = :year
                 """, nativeQuery = true)

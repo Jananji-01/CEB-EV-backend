@@ -39,8 +39,8 @@ public class ChargingSession {
     @Column(name = "id_device")
     private String idDevice;
 
-    @Column(name = "ev_owner_account_no")
-    private String evOwnerAccountNo;
+    @Column(name = "e_account_number")
+    private String eAccountNo;
 
     @Column(name = "meter_start")
     private Long meterStart;
@@ -53,8 +53,8 @@ public class ChargingSession {
     private SmartPlug smartPlug;
 
     // getters and setters
-    public String getEvOwnerAccountNo() { return evOwnerAccountNo; }
-    public void setEvOwnerAccountNo(String evOwnerAccountNo) { this.evOwnerAccountNo = evOwnerAccountNo; }
+    public String getEAccountNo() { return eAccountNo; }
+    public void setEAccountNo(String eAccountNo) { this.eAccountNo = eAccountNo; }
 
     public Long getMeterStart() { return meterStart; }
     public void setMeterStart(Long meterStart) { this.meterStart = meterStart; }
