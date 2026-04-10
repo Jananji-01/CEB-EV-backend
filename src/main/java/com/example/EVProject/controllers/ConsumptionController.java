@@ -21,11 +21,4 @@ public class ConsumptionController {
     public ResponseEntity<MonthlyConsumptionResponse> monthly(@RequestBody MonthlyConsumptionRequest req) {
         return ResponseEntity.ok(service.calculateAndStore(req));
     }
-
-    @PostMapping("/monthly-test")
-    public ResponseEntity<?> testMonthly(@RequestBody Map<String, Object> req) {
-        System.out.println("=== TEST ENDPOINT HIT ===");
-        System.out.println("Request body: " + req);
-        return ResponseEntity.ok(Map.of("message", "Success", "received", req));
-    }
 }
