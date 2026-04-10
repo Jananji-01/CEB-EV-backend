@@ -5,6 +5,7 @@ import com.example.EVProject.dto.MonthlyConsumptionResponse;
 import com.example.EVProject.services.MonthlyConsumptionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/consumption")
@@ -19,5 +20,12 @@ public class ConsumptionController {
     @PostMapping("/monthly")
     public ResponseEntity<MonthlyConsumptionResponse> monthly(@RequestBody MonthlyConsumptionRequest req) {
         return ResponseEntity.ok(service.calculateAndStore(req));
+    }
+
+    @PostMapping("/monthly-test")
+    public ResponseEntity<?> testMonthly(@RequestBody Map<String, Object> req) {
+        System.out.println("=== TEST ENDPOINT HIT ===");
+        System.out.println("Request body: " + req);
+        return ResponseEntity.ok(Map.of("message", "Success", "received", req));
     }
 }
