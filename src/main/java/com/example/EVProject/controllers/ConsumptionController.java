@@ -5,6 +5,7 @@ import com.example.EVProject.dto.MonthlyConsumptionResponse;
 import com.example.EVProject.services.MonthlyConsumptionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/consumption")

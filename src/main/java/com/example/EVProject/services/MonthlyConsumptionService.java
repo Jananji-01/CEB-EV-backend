@@ -27,8 +27,10 @@ public class MonthlyConsumptionService {
     }
 
     public MonthlyConsumptionResponse calculateAndStore(MonthlyConsumptionRequest req) {
+        System.out.println("=== SERVICE METHOD STARTED ===");
+        
         String username = req.getUsername();
-        String eAccountNumber = req.getEAccountNumber(); // this is e_account_number
+        String eAccountNumber = req.getEAccountNumber();
 
         if (username == null || eAccountNumber == null) {
             throw new IllegalArgumentException("Username and account number are required");
@@ -36,13 +38,58 @@ public class MonthlyConsumptionService {
 
         LocalDate now = LocalDate.now();
         int month = (req.getMonth() != null) ? req.getMonth() : now.getMonthValue();
-        int year  = (req.getYear()  != null) ? req.getYear()  : now.getYear();
+        int year = (req.getYear() != null) ? req.getYear() : now.getYear();
 
-        // Aggregate from charging_sessions using ev_owner_account_no
-        Integer totalSessions = sessionRepo.countMonthlySessionsByOwner(eAccountNumber, month, year);
-        Double totalConsumption = sessionRepo.sumMonthlyConsumptionByOwner(eAccountNumber, month, year);
-        Double durationDouble = sessionRepo.sumMonthlyDurationMinutesByOwner(eAccountNumber, month, year);
-        Double totalAmount = sessionRepo.sumMonthlyAmountByOwner(eAccountNumber, month, year);
+        System.out.println("Querying for: account=" + eAccountNumber + ", month=" + month + ", year=" + year);
+
+        Integer totalSessions = null;
+        Double totalConsumption = null;
+        Double durationDouble = null;
+        Double totalAmount = null;
+        
+        // Test query 1
+        try {
+            System.out.println("1. Executing countMonthlySessionsByOwner...");
+            totalSessions = sessionRepo.countMonthlySessionsByOwner(eAccountNumber, month, year);
+            System.out.println("   ✓ Result: " + totalSessions);
+        } catch (Exception e) {
+            System.err.println("   ✗ FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed at count query", e);
+        }
+        
+        // Test query 2
+        try {
+            System.out.println("2. Executing sumMonthlyConsumptionByOwner...");
+            totalConsumption = sessionRepo.sumMonthlyConsumptionByOwner(eAccountNumber, month, year);
+            System.out.println("   ✓ Result: " + totalConsumption);
+        } catch (Exception e) {
+            System.err.println("   ✗ FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed at consumption query", e);
+        }
+        
+        // Test query 3 - This is likely the problem
+        try {
+            System.out.println("3. Executing sumMonthlyDurationMinutesByOwner...");
+            durationDouble = sessionRepo.sumMonthlyDurationMinutesByOwner(eAccountNumber, month, year);
+            System.out.println("   ✓ Result: " + durationDouble);
+        } catch (Exception e) {
+            System.err.println("   ✗ FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed at duration query", e);
+        }
+        
+        // Test query 4
+        try {
+            System.out.println("4. Executing sumMonthlyAmountByOwner...");
+            totalAmount = sessionRepo.sumMonthlyAmountByOwner(eAccountNumber, month, year);
+            System.out.println("   ✓ Result: " + totalAmount);
+        } catch (Exception e) {
+            System.err.println("   ✗ FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed at amount query", e);
+        }
 
         if (totalSessions == null) totalSessions = 0;
         if (totalConsumption == null) totalConsumption = 0.0;
@@ -50,11 +97,12 @@ public class MonthlyConsumptionService {
         int totalDurationMinutes = (durationDouble == null) ? 0 : (int) Math.round(durationDouble);
         totalConsumption = round3(totalConsumption);
 
-        // Return response (storage in monthly_consumption is skipped for now)
+        System.out.println("=== ALL QUERIES SUCCESSFUL ===");
+        
         return MonthlyConsumptionResponse.builder()
                 .username(username)
                 .eAccountNumber(eAccountNumber)
-                .idDevice("ALL") // placeholder, not used by frontend
+                .idDevice("ALL")
                 .month(month)
                 .year(year)
                 .totalConsumption(totalConsumption)
