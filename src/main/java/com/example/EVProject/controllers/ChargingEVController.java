@@ -130,17 +130,72 @@ public class ChargingEVController {
         }
     }
 
+    // @PostMapping("/device/{idDevice}/prepare")
+    // public ResponseEntity<Map<String, Object>> prepareDevice(
+    //         @PathVariable String idDevice,
+    //         @RequestBody(required = false) Map<String, String> request) {
+    //     try {
+    //         // Extract EV owner account number from request
+    //         String evOwnerAccountNo = null;
+    //         if (request != null && request.containsKey("evOwnerAccountNo")) {
+    //             evOwnerAccountNo = request.get("evOwnerAccountNo");
+    //         }
+
+    //         if (evOwnerAccountNo == null || evOwnerAccountNo.isEmpty()) {
+    //             return ResponseEntity.badRequest().body(Map.of(
+    //                 "success", false,
+    //                 "message", "EV owner account number is required"
+    //             ));
+    //         }
+
+    //         // Look up owner by account number
+    //         Optional<EvOwner> ownerOpt = evOwnerRepository.findByEAccountNumber(evOwnerAccountNo);
+    //         if (ownerOpt.isEmpty()) {
+    //             return ResponseEntity.badRequest().body(Map.of(
+    //                 "success", false,
+    //                 "message", "Invalid EV owner account number"
+    //             ));
+    //         }
+    //         EvOwner owner = ownerOpt.get();
+    //         String idTag = owner.getIdTag();
+
+    //         // Create/update IdTagInfo record linking device to owner's persistent idTag
+    //         IdTagInfo tagInfo = new IdTagInfo();
+    //         tagInfo.setIdDevice(idDevice);
+    //         tagInfo.setIdTag(idTag);
+    //         tagInfo.setStatus("Accepted");
+    //         tagInfo.setExpiryDate(LocalDateTime.now(ZoneOffset.UTC).plusYears(1)); // 1 year validity
+    //         tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+    //         idTagInfoRepository.save(tagInfo);
+    //         System.out.println("💾 Linked device " + idDevice + " to owner " + evOwnerAccountNo + " (idTag: " + idTag + ")");
+
+    //         // Send RemoteStartTransaction with the owner's idTag
+    //         boolean sent = ocppWebSocketService.sendRemoteStartTransaction(idDevice, idTag, 1);
+    //         if (!sent) {
+    //             return ResponseEntity.badRequest().body(Map.of(
+    //                 "success", false,
+    //                 "message", "Device not connected or failed to send prepare command"
+    //             ));
+    //         }
+    //         return ResponseEntity.ok(Map.of(
+    //             "success", true,
+    //             "message", "Prepare command sent to device. Device is now ready."
+    //         ));
+    //     } catch (Exception e) {
+    //         return ResponseEntity.internalServerError().body(Map.of(
+    //             "success", false,
+    //             "message", "Failed to prepare device: " + e.getMessage()
+    //         ));
+    //     }
+    // }
+
     @PostMapping("/device/{idDevice}/prepare")
     public ResponseEntity<Map<String, Object>> prepareDevice(
             @PathVariable String idDevice,
             @RequestBody(required = false) Map<String, String> request) {
         try {
-            // Extract EV owner account number from request
-            String evOwnerAccountNo = null;
-            if (request != null && request.containsKey("evOwnerAccountNo")) {
-                evOwnerAccountNo = request.get("evOwnerAccountNo");
-            }
-
+            String evOwnerAccountNo = request.get("evOwnerAccountNo");
+            
             if (evOwnerAccountNo == null || evOwnerAccountNo.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
@@ -148,7 +203,6 @@ public class ChargingEVController {
                 ));
             }
 
-            // Look up owner by account number
             Optional<EvOwner> ownerOpt = evOwnerRepository.findByEAccountNumber(evOwnerAccountNo);
             if (ownerOpt.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -156,6 +210,7 @@ public class ChargingEVController {
                     "message", "Invalid EV owner account number"
                 ));
             }
+            
             EvOwner owner = ownerOpt.get();
             String idTag = owner.getIdTag();
 
@@ -181,10 +236,27 @@ public class ChargingEVController {
                 tagInfo.setExpiryDate(now.plusHours(6));
                 tagInfo.setCreatedAt(now);
             }
+            
+            // Generate idTag if null
+            if (idTag == null || idTag.trim().isEmpty()) {
+                idTag = generateIdTag(idDevice);
+                owner.setIdTag(idTag);
+                evOwnerRepository.save(owner);
+            }
+            
+            // ✅ ALWAYS CREATE NEW RECORD - Keep history
+            IdTagInfo tagInfo = new IdTagInfo();
+            tagInfo.setIdDevice(idDevice);
+            tagInfo.setIdTag(idTag);
+            tagInfo.setStatus("Accepted");
+            tagInfo.setExpiryDate(LocalDateTime.now(ZoneOffset.UTC).plusYears(1));
+            tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
             idTagInfoRepository.save(tagInfo);
-            System.out.println("💾 Linked device " + idDevice + " to owner " + evOwnerAccountNo + " (idTag: " + idTag + ")");
+            
+            System.out.println("✅ Created new authorization record for device " + idDevice + 
+                            " with idTag " + idTag + " at " + tagInfo.getCreatedAt());
 
-            // Send RemoteStartTransaction with the owner's idTag
+            // Send RemoteStartTransaction to device
             boolean sent = ocppWebSocketService.sendRemoteStartTransaction(idDevice, idTag, 1);
             if (!sent) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -192,11 +264,16 @@ public class ChargingEVController {
                     "message", "Device not connected or failed to send prepare command"
                 ));
             }
+            
             return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Prepare command sent to device. Device is now ready."
+                "message", "Device is ready for charging",
+                "idTag", idTag,
+                "authorizationId", tagInfo.getId()
             ));
+            
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
                 "message", "Failed to prepare device: " + e.getMessage()
