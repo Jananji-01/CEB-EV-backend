@@ -1032,41 +1032,31 @@
 
 package com.example.EVProject.services;
 
-import com.example.EVProject.model.*;
-import com.example.EVProject.repositories.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import com.example.EVProject.services.OcppActionService;
+
+import com.example.EVProject.model.OcppMessageLog;
+import com.example.EVProject.repositories.OcppMessageLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OcppMessageProcessor {
 
     @Autowired
-    private ChargingSessionRepository chargingSessionRepository;
-    @Autowired
-    private IdTagInfoRepository idTagInfoRepository;
-    @Autowired
-    private SmartPlugRepository smartPlugRepository;
-    @Autowired
-    private EvOwnerRepository evOwnerRepository;
-    @Autowired
-    private MeterValueRepository meterValueRepository;
-    @Autowired
-    private SampledValueRepository sampledValueRepository;
+    private OcppActionService ocppActionService;
+
     @Autowired
     private OcppMessageLogRepository messageLogRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Autowired
     private BillingService billingService;
     @Autowired
@@ -1180,13 +1170,33 @@ public class OcppMessageProcessor {
     public String processMessage(String deviceId, String message) {
         try {
             JsonNode root = objectMapper.readTree(message);
-
             if (!root.isArray() || root.size() < 3) {
                 return createError("ProtocolError", "Invalid message format", null);
             }
 
             int messageTypeId = root.get(0).asInt();
             String messageId = root.get(1).asText();
+            String action;
+            JsonNode payload;
+
+            switch (messageTypeId) {
+                case 2: // CALL
+                    action = root.get(2).asText();
+                    payload = root.size() > 3 ? root.get(3) : objectMapper.createObjectNode();
+                    break;
+                case 3: // CALLRESULT
+                    action = "CALLRESULT";
+                    payload = root.size() > 2 ? root.get(2) : objectMapper.createObjectNode();
+                    break;
+                case 4: // CALLERROR
+                    action = "CALLERROR";
+                    payload = root.size() > 2 ? root.get(2) : objectMapper.createObjectNode();
+                    break;
+                default:
+                    return createError("FormatViolation", "Unknown message type", messageId);
+            }
+
+            logMessage(deviceId, messageId, action, messageTypeId, payload.toString(), "INCOMING");
             String action = root.has(2) && !root.get(2).isNull() ? root.get(2).asText() : null;
             JsonNode payload = root.size() > 3 ? root.get(3) : objectMapper.createObjectNode();
 
@@ -1207,7 +1217,6 @@ public class OcppMessageProcessor {
                 default:
                     return createError("FormatViolation", "Unknown message type", messageId);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             return createError("InternalError", e.getMessage(), null);
@@ -1224,7 +1233,7 @@ public class OcppMessageProcessor {
     }
 
     private String handleCall(String deviceId, String messageId, String action, JsonNode payload) {
-        ObjectNode responsePayload = objectMapper.createObjectNode();
+        ObjectNode responsePayload;
 
         if (action == null) {
             responsePayload = createErrorPayload("ProtocolError", "Action is null");
@@ -1233,25 +1242,25 @@ public class OcppMessageProcessor {
 
         switch (action) {
             case "BootNotification":
-                responsePayload = handleBootNotification(deviceId, payload);
+                responsePayload = ocppActionService.handleBootNotification(deviceId, payload);
                 break;
             case "Authorize":
-                responsePayload = handleAuthorize(deviceId, payload);
+                responsePayload = ocppActionService.handleAuthorize(deviceId, payload);
                 break;
             case "StartTransaction":
-                responsePayload = handleStartTransaction(deviceId, payload);
+                responsePayload = ocppActionService.handleStartTransaction(deviceId, messageId, payload);
                 break;
             case "StopTransaction":
-                responsePayload = handleStopTransaction(deviceId, payload);
+                responsePayload = ocppActionService.handleStopTransaction(deviceId, messageId, payload);
                 break;
             case "MeterValues":
-                responsePayload = handleMeterValues(deviceId, payload);
+                responsePayload = ocppActionService.handleMeterValues(deviceId, payload);
                 break;
             case "Heartbeat":
-                responsePayload = handleHeartbeat();
+                responsePayload = ocppActionService.handleHeartbeat();
                 break;
             case "StatusNotification":
-                responsePayload = handleStatusNotification(deviceId, payload);
+                responsePayload = ocppActionService.handleStatusNotification(deviceId, payload);
                 break;
             default:
                 responsePayload = createErrorPayload("NotSupported", "Action not supported: " + action);
