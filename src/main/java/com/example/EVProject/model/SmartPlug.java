@@ -52,11 +52,15 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "smart_plug")
 public class SmartPlug {

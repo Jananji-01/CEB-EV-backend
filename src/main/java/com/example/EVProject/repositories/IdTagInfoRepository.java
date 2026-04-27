@@ -40,7 +40,12 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
 
     Optional<IdTagInfo> findByIdTag(String idTag);
 
-    Optional<IdTagInfo> findByIdTagAndIdDevice(String idTag, String idDevice);
+        // ✅ Returns List (for when you want all records)
+    List<IdTagInfo> findByIdTagAndIdDevice(String idTag, String idDevice);
+    
+    // ✅ Returns Optional (for when you expect single result)
+    Optional<IdTagInfo> findFirstByIdTagAndIdDeviceOrderByCreatedAtDesc(String idTag, String idDevice);
+    
 
     // You already had this method (Spring can auto-generate it)
     Optional<IdTagInfo> findTopByIdDeviceOrderByCreatedAtDesc(String idDevice);
