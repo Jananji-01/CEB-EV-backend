@@ -6,10 +6,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface ChargingSessionRepository extends JpaRepository<ChargingSession, Integer> {
+
         Optional<ChargingSession> findByIdDeviceAndEndTimeIsNull(String idDevice);
 
         @Query("select s from ChargingSession s " +
@@ -41,104 +43,149 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
         List<ChargingSession> findSessionsForCurrentMonth();
 
         @Query(value = """
-                SELECT COUNT(*)
-                FROM charging_sessions cs
-                WHERE cs.id_device = :deviceId
-                AND EXTRACT(MONTH FROM cs.start_time) = :month
-                AND EXTRACT(YEAR  FROM cs.start_time) = :year
-                """, nativeQuery = true)
+            SELECT COUNT(*)
+            FROM charging_sessions cs
+            WHERE cs.id_device = :deviceId
+            AND EXTRACT(MONTH FROM cs.start_time) = :month
+            AND EXTRACT(YEAR  FROM cs.start_time) = :year
+            """, nativeQuery = true)
         Integer countMonthlySessions(@Param("deviceId") String deviceId,
-                                        @Param("month") int month,
-                                        @Param("year") int year);
+                                     @Param("month") int month,
+                                     @Param("year") int year);
 
         @Query(value = """
-                SELECT COALESCE(SUM(cs.total_consumption), 0)
-                FROM charging_sessions cs
-                WHERE cs.id_device = :deviceId
-                AND EXTRACT(MONTH FROM cs.start_time) = :month
-                AND EXTRACT(YEAR  FROM cs.start_time) = :year
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM(cs.total_consumption), 0)
+            FROM charging_sessions cs
+            WHERE cs.id_device = :deviceId
+            AND EXTRACT(MONTH FROM cs.start_time) = :month
+            AND EXTRACT(YEAR  FROM cs.start_time) = :year
+            """, nativeQuery = true)
         Double sumMonthlyConsumption(@Param("deviceId") String deviceId,
-                                        @Param("month") int month,
-                                        @Param("year") int year);
+                                     @Param("month") int month,
+                                     @Param("year") int year);
 
         @Query(value = """
-                SELECT COALESCE(SUM((cs.end_time - cs.start_time) * 24 * 60), 0)
-                FROM charging_sessions cs
-                WHERE cs.id_device = :deviceId
-                AND cs.end_time IS NOT NULL
-                AND cs.start_time IS NOT NULL
-                AND EXTRACT(MONTH FROM cs.start_time) = :month
-                AND EXTRACT(YEAR  FROM cs.start_time) = :year
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM((cs.end_time - cs.start_time) * 24 * 60), 0)
+            FROM charging_sessions cs
+            WHERE cs.id_device = :deviceId
+            AND cs.end_time IS NOT NULL
+            AND cs.start_time IS NOT NULL
+            AND EXTRACT(MONTH FROM cs.start_time) = :month
+            AND EXTRACT(YEAR  FROM cs.start_time) = :year
+            """, nativeQuery = true)
         Double sumMonthlyDurationMinutes(@Param("deviceId") String deviceId,
-                                        @Param("month") int month,
-                                        @Param("year") int year);
-
+                                         @Param("month") int month,
+                                         @Param("year") int year);
 
         @Query(value = """
-                SELECT COUNT(*) FROM charging_sessions cs 
-                WHERE cs.id_device = :deviceId
-                """, nativeQuery = true)
+            SELECT COUNT(*) FROM charging_sessions cs 
+            WHERE cs.id_device = :deviceId
+            """, nativeQuery = true)
         Integer countSessionsByDevice(@Param("deviceId") String deviceId);
 
         @Query(value = """
-                SELECT COALESCE(SUM(cs.total_consumption), 0) 
-                FROM charging_sessions cs 
-                WHERE cs.id_device = :deviceId
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM(cs.total_consumption), 0) 
+            FROM charging_sessions cs 
+            WHERE cs.id_device = :deviceId
+            """, nativeQuery = true)
         Double totalConsumptionByDevice(@Param("deviceId") String deviceId);
 
         @Query(value = """
-                SELECT * FROM (
-                        SELECT * FROM charging_sessions cs 
-                        WHERE cs.id_device = :deviceId 
-                        ORDER BY cs.start_time DESC
-                ) WHERE ROWNUM <= 5
-                """, nativeQuery = true)
+            SELECT * FROM (
+                    SELECT * FROM charging_sessions cs 
+                    WHERE cs.id_device = :deviceId 
+                    ORDER BY cs.start_time DESC
+            ) WHERE ROWNUM <= 5
+            """, nativeQuery = true)
         List<ChargingSession> findRecentSessions(@Param("deviceId") String deviceId);
 
         @Query(value = """
-                SELECT COUNT(*) FROM charging_sessions 
-                WHERE e_account_number = :accountNo 
-                AND EXTRACT(MONTH FROM start_time) = :month 
-                AND EXTRACT(YEAR FROM start_time) = :year
-                """, nativeQuery = true)
+            SELECT COUNT(*) FROM charging_sessions 
+            WHERE e_account_number = :accountNo 
+            AND EXTRACT(MONTH FROM start_time) = :month 
+            AND EXTRACT(YEAR FROM start_time) = :year
+            """, nativeQuery = true)
         Integer countMonthlySessionsByOwner(@Param("accountNo") String accountNo,
-                                                @Param("month") int month,
-                                                @Param("year") int year);
+                                            @Param("month") int month,
+                                            @Param("year") int year);
 
         @Query(value = """
-                SELECT COALESCE(SUM(total_consumption), 0) FROM charging_sessions 
-                WHERE e_account_number = :accountNo 
-                AND EXTRACT(MONTH FROM start_time) = :month 
-                AND EXTRACT(YEAR FROM start_time) = :year
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM(total_consumption), 0) FROM charging_sessions 
+            WHERE e_account_number = :accountNo 
+            AND EXTRACT(MONTH FROM start_time) = :month 
+            AND EXTRACT(YEAR FROM start_time) = :year
+            """, nativeQuery = true)
         Double sumMonthlyConsumptionByOwner(@Param("accountNo") String accountNo,
-                                                @Param("month") int month,
-                                                @Param("year") int year);
+                                            @Param("month") int month,
+                                            @Param("year") int year);
 
         @Query(value = """
-                SELECT COALESCE(SUM((CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 24 * 60), 0)
-                FROM charging_sessions 
-                WHERE e_account_number = :accountNo 
-                AND end_time IS NOT NULL 
-                AND start_time IS NOT NULL
-                AND EXTRACT(MONTH FROM start_time) = :month 
-                AND EXTRACT(YEAR FROM start_time) = :year
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM((CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 24 * 60), 0)
+            FROM charging_sessions 
+            WHERE e_account_number = :accountNo 
+            AND end_time IS NOT NULL 
+            AND start_time IS NOT NULL
+            AND EXTRACT(MONTH FROM start_time) = :month 
+            AND EXTRACT(YEAR FROM start_time) = :year
+            """, nativeQuery = true)
         Double sumMonthlyDurationMinutesByOwner(@Param("accountNo") String accountNo,
                                                 @Param("month") int month,
                                                 @Param("year") int year);
-        
+
         @Query(value = """
-                SELECT COALESCE(SUM(amount), 0) FROM charging_sessions 
-                WHERE e_account_number = :accountNo 
-                AND EXTRACT(MONTH FROM start_time) = :month 
-                AND EXTRACT(YEAR FROM start_time) = :year
-                """, nativeQuery = true)
+            SELECT COALESCE(SUM(amount), 0) FROM charging_sessions 
+            WHERE e_account_number = :accountNo 
+            AND EXTRACT(MONTH FROM start_time) = :month 
+            AND EXTRACT(YEAR FROM start_time) = :year
+            """, nativeQuery = true)
         Double sumMonthlyAmountByOwner(@Param("accountNo") String accountNo,
-                                @Param("month") int month,
-                                @Param("year") int year);                                        
-        
+                                       @Param("month") int month,
+                                       @Param("year") int year);
+
+        // ============ SESSION FILTERING METHODS ============
+
+        // Find by device ID only
+        @Query("SELECT s FROM ChargingSession s WHERE s.idDevice = :deviceId ORDER BY s.startTime DESC")
+        List<ChargingSession> findByIdDevice(@Param("deviceId") String deviceId);
+
+        // Find by e-account number only - USING @Query (DO NOT add a method without @Query)
+        @Query("SELECT s FROM ChargingSession s WHERE s.eAccountNo = :eAccountNo ORDER BY s.startTime DESC")
+        List<ChargingSession> findByEAccountNo(@Param("eAccountNo") String eAccountNo);
+
+        // Find by both
+        @Query("SELECT s FROM ChargingSession s WHERE s.idDevice = :deviceId AND s.eAccountNo = :eAccountNo ORDER BY s.startTime DESC")
+        List<ChargingSession> findByIdDeviceAndEAccountNo(@Param("deviceId") String deviceId, @Param("eAccountNo") String eAccountNo);
+
+        // Find by device ID with date range
+        @Query("SELECT s FROM ChargingSession s WHERE s.idDevice = :deviceId AND s.startTime BETWEEN :startDate AND :endDate ORDER BY s.startTime DESC")
+        List<ChargingSession> findByIdDeviceAndStartTimeBetween(
+                @Param("deviceId") String deviceId,
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate);
+
+        // Find by e-account number with date range
+        @Query("SELECT s FROM ChargingSession s WHERE s.eAccountNo = :eAccountNo AND s.startTime BETWEEN :startDate AND :endDate ORDER BY s.startTime DESC")
+        List<ChargingSession> findByEAccountNoAndStartTimeBetween(
+                @Param("eAccountNo") String eAccountNo,
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate);
+
+        // Find by both with date range
+        @Query("SELECT s FROM ChargingSession s WHERE s.idDevice = :deviceId AND s.eAccountNo = :eAccountNo AND s.startTime BETWEEN :startDate AND :endDate ORDER BY s.startTime DESC")
+        List<ChargingSession> findByIdDeviceAndEAccountNoAndStartTimeBetween(
+                @Param("deviceId") String deviceId,
+                @Param("eAccountNo") String eAccountNo,
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate);
+
+        // Find by session ID
+        Optional<ChargingSession> findBySessionId(Integer sessionId);
+
+        // Get all with optional date range
+        @Query("SELECT s FROM ChargingSession s WHERE " +
+                "(:startDate IS NULL OR s.startTime >= :startDate) AND " +
+                "(:endDate IS NULL OR s.startTime <= :endDate) " +
+                "ORDER BY s.startTime DESC")
+        List<ChargingSession> findAllWithDateRange(@Param("startDate") LocalDateTime startDate,
+                                                   @Param("endDate") LocalDateTime endDate);
 }
