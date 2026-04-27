@@ -120,14 +120,16 @@ public interface ChargingSessionRepository extends JpaRepository<ChargingSession
                                             @Param("year") int year);
 
         @Query(value = """
-            SELECT COALESCE(SUM((CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 24 * 60), 0)
-            FROM charging_sessions 
-            WHERE e_account_number = :accountNo 
-            AND end_time IS NOT NULL 
-            AND start_time IS NOT NULL
-            AND EXTRACT(MONTH FROM start_time) = :month 
-            AND EXTRACT(YEAR FROM start_time) = :year
-            """, nativeQuery = true)
+        SELECT COALESCE(SUM(
+                (CAST(end_time AS DATE) - CAST(start_time AS DATE)) * 1440
+        ), 0)
+        FROM charging_sessions 
+        WHERE e_account_number = :accountNo 
+        AND end_time IS NOT NULL 
+        AND start_time IS NOT NULL
+        AND EXTRACT(MONTH FROM start_time) = :month 
+        AND EXTRACT(YEAR FROM start_time) = :year
+        """, nativeQuery = true)
         Double sumMonthlyDurationMinutesByOwner(@Param("accountNo") String accountNo,
                                                 @Param("month") int month,
                                                 @Param("year") int year);

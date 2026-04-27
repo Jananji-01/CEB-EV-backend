@@ -809,6 +809,7 @@ import com.example.EVProject.repositories.EvOwnerRepository;
 import com.example.EVProject.services.ChargingSessionService;
 import com.example.EVProject.services.ChargingStationService;
 import com.example.EVProject.services.MeterValueService;
+import com.example.EVProject.services.BillingService;
 import com.example.EVProject.utils.IdDeviceValidator;
 import com.example.EVProject.utils.OcppMessageParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -824,6 +825,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/charging-stations")
@@ -849,6 +851,9 @@ public class ChargingStationController {
 
     @Autowired
     private MeterValueService meterValueService;
+
+    @Autowired
+    private BillingService billingService;
 
     @Autowired
     private EvOwnerRepository evOwnerRepository;
@@ -1427,6 +1432,23 @@ public class ChargingStationController {
             System.out.println("✅ Session " + transactionId + " ended. Total consumption: " + 
                             (meterStop != null ? meterStop + " kWh" : "N/A"));
 
+            // Asynchronously call billing API to avoid delaying OCPP response
+            final Integer finalTransactionId = transactionId;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    System.out.println("🔥🔥🔥 TRIGGERING BILLING for transaction: " + finalTransactionId);
+                    Map<String, Object> billingResult = billingService.sendChargingDataToBilling(finalTransactionId);
+                    System.out.println("📡 Billing API call result: " + billingResult);
+                    
+                    // Note: WebSocket messaging is handled inside BillingService
+                    // You can add additional logging here if needed
+                    
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to call billing API for transaction " + finalTransactionId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+
             // ✅ Build OCPP response
             Map<String, Object> idTagInfo = Map.of("status", "Accepted");
             Object[] ocppResponse = new Object[]{
@@ -1473,6 +1495,7 @@ public class ChargingStationController {
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
     }
+    
     @PostMapping("/bootNotification")
     public ResponseEntity<?> handleBootNotification(
             @RequestBody String rawBody,
