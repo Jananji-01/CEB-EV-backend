@@ -134,4 +134,12 @@ public class SmartPlug {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public void setIdDevice(String idDevice) {
+    this.idDevice = idDevice;
+    }
+
+    public void setChargePointModel(String chargePointModel) {
+        this.chargePointModel = chargePointModel;
+    }
 }

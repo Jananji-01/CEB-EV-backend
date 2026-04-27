@@ -36,4 +36,25 @@ public class OcppWebSocketSession {
     
     @Column(name = "last_heartbeat")
     private LocalDateTime lastHeartbeat;
+
+    //getters and setters
+    public void setSessionId(String sessionId) {
+    this.sessionId = sessionId;
+    }
+
+    public void setIdDevice(String idDevice) {
+        this.idDevice = idDevice;
+    }
+
+    public void setConnectedAt(LocalDateTime connectedAt) {
+        this.connectedAt = connectedAt;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setDisconnectedAt(LocalDateTime disconnectedAt) {
+        this.disconnectedAt = disconnectedAt;
+    }
 }
