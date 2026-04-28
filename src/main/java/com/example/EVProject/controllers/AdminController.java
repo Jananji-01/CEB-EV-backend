@@ -76,25 +76,24 @@ public class AdminController {
     }
 
     @PutMapping("/{adminId}")
-    public ResponseEntity<AdminDTO> updateAdmin(
+    public ResponseEntity<?> updateAdmin(
             @PathVariable Integer adminId,
             @Valid @RequestBody AdminDTO adminDTO) {
         try {
             Admin updatedAdmin = adminService.updateAdmin(adminId, adminDTO);
-
-            AdminDTO responseDTO = new AdminDTO();
-            responseDTO.setAdminId(updatedAdmin.getAdminId());
-            responseDTO.setUsername(updatedAdmin.getUsername());
+            
+            // Create response without password
+            Map<String, Object> response = new HashMap<>();
+            response.put("adminId", updatedAdmin.getAdminId());
+            response.put("username", updatedAdmin.getUsername());
             if (updatedAdmin.getUser() != null) {
-                responseDTO.setEmail(updatedAdmin.getUser().getEmail());
+                response.put("email", updatedAdmin.getUser().getEmail());
             }
-
-            // Do not include password
-            responseDTO.setPassword(null);
-
-            return ResponseEntity.ok(responseDTO);
+            response.put("message", "Admin updated successfully");
+            
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
