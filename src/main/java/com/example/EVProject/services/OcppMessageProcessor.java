@@ -1061,6 +1061,7 @@ import java.util.concurrent.CompletableFuture;
 import java.time.ZonedDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.springframework.context.annotation.Lazy;
 import com.example.EVProject.model.SmartPlug;
 import com.example.EVProject.model.IdTagInfo;
 import com.example.EVProject.model.ChargingSession;
@@ -1078,6 +1079,8 @@ public class OcppMessageProcessor {
     private OcppMessageLogRepository messageLogRepository;
     @Autowired
     private BillingService billingService;
+
+    @Lazy
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -1208,7 +1211,7 @@ public class OcppMessageProcessor {
 
             // Build OCPP response
             response.put("status", "Accepted");
-            response.put("currentTime", ZonedDateTime.now(ZoneOffset.UTC).toString());
+            response.put("currentTime", ZonedDateTime.now().toString());
             response.put("interval", 300); // Heartbeat interval in seconds
 
         } catch (Exception e) {
@@ -1699,7 +1702,7 @@ public class OcppMessageProcessor {
      */
     private ObjectNode handleHeartbeat() {
         ObjectNode response = objectMapper.createObjectNode();
-        response.put("currentTime", ZonedDateTime.now(ZoneOffset.UTC).toString());
+        response.put("currentTime", ZonedDateTime.now().toString());
         return response;
     }
 
@@ -1799,23 +1802,6 @@ public class OcppMessageProcessor {
         } catch (Exception e) {
             return "IDT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
-    }
-
-    /**
-     * Helper method to check if IdTag is valid and not expired
-     */
-    private boolean isValidIdTag(String idTag, String deviceId) {
-        List<IdTagInfo> idTagInfoList = idTagInfoRepository.findBySomething();
-        Optional<IdTagInfo> idTagInfo = idTagInfoList.isEmpty() ? Optional.empty() : Optional.of(idTagInfoList.get(0));
-        if (idTagInfo.isEmpty()) {
-            return false;
-        }
-
-        IdTagInfo tag = idTagInfo.get();
-        LocalDateTime now = LocalDateTime.now();
-        
-        // Check expiry and status
-        return tag.getExpiryDate().isAfter(now) && "Accepted".equals(tag.getStatus());
     }
 
     /**

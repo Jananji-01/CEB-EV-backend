@@ -60,5 +60,5 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
         """, nativeQuery = true)
     Optional<IdTagInfo> findLatestByIdDevice(@Param("idDevice") String idDevice);
 
-    public List<IdTagInfo> findBySomething();
+    
 }
