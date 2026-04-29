@@ -47,7 +47,7 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
     Optional<IdTagInfo> findFirstByIdTagAndIdDeviceOrderByCreatedAtDesc(String idTag, String idDevice);
     
 
-    // You already had this method (Spring can auto-generate it)
+    @Query(value = "SELECT * FROM (SELECT * FROM DACONS16.id_tag_info WHERE id_device = ?1 ORDER BY created_at DESC) WHERE ROWNUM = 1", nativeQuery = true)
     Optional<IdTagInfo> findTopByIdDeviceOrderByCreatedAtDesc(String idDevice);
 
     // Custom query MUST be inside the interface
@@ -59,4 +59,6 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
         ) WHERE ROWNUM = 1
         """, nativeQuery = true)
     Optional<IdTagInfo> findLatestByIdDevice(@Param("idDevice") String idDevice);
+
+    
 }

@@ -85,4 +85,29 @@ public class OcppMessageLog {
 
     @Column(name = "RESPONDED_AT")
     private LocalDateTime respondedAt;
+
+    //getters and setters
+    public void setIdDevice(String idDevice) {
+    this.idDevice = idDevice;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public void setMessageTypeId(int messageTypeId) {
+        this.messageTypeId = messageTypeId;
+    }
+
+    public void setPayload(String payload) {
+        this.payload = payload;
+    }
+
+    public void setReceivedAt(LocalDateTime receivedAt) {
+        this.receivedAt = receivedAt;
+    }
 }
