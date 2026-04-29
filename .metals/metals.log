@@ -1,0 +1,208 @@
+2026.04.29 13:38:00 INFO  Started: Metals version 1.6.7 in folders 'D:\EV-Project\CEB-EV-backend' for client Visual Studio Code 1.117.0.
+2026.04.29 13:38:01 INFO  time: initialize in 0.27s
+2026.04.29 13:38:01 INFO  Memory monitor started
+2026.04.29 13:38:08 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.04.29 13:38:36 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\ChargingStationController.java. Using fallback presentation compiler.
+2026.04.29 13:38:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+2026.04.29 13:38:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:38:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:38:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:39:07 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:39:50 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:39:50 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:39:54 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:43:47 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:43:48 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:52:40 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 1:53:15 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.04.29 13:53:15 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 1:53:34 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.04.29 13:53:34 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:54:52 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\ChargingStationController.java. Using fallback presentation compiler.
+2026.04.29 13:54:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:55:07 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:55:13 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 13:55:35 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+Apr 29, 2026 1:55:36 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 70
+2026.04.29 13:55:35 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+2026.04.29 13:55:36 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+2026.04.29 13:55:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+2026.04.29 13:55:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+Apr 29, 2026 1:55:55 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 78
+2026.04.29 13:55:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppActionService.java. Using fallback presentation compiler.
+2026.04.29 13:55:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+Apr 29, 2026 1:56:00 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 79
+2026.04.29 13:56:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 13:56:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 13:56:02 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 13:57:25 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:00:47 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:00:47 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\ChargingStationController.java. Using fallback presentation compiler.
+2026.04.29 14:00:47 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:00:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:00:51 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:00:58 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\services\OcppMessageProcessor.java. Using fallback presentation compiler.
+2026.04.29 14:01:05 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:05 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:01:05 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:05 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:01:05 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 136
+2026.04.29 14:01:05 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:06 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:07 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:34 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:01:34 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:36 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:36 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:36 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:38 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:04:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:40 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:52 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:52 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:52 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:53 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:04:53 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:54 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:54 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:58 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:59 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:04:58 INFO  Created report: Optional[file:///D:/EV-Project/CEB-EV-backend/src/main/java/com/example/EVProject/controllers/MeterValueController.java]
+2026.04.29 14:04:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:59 WARN  Running javac-semanticdb failed for file:///D:/EV-Project/CEB-EV-backend/src/main/java/com/example/EVProject/controllers/MeterValueController.java. Output:
+
+2026.04.29 14:04:58 INFO  QDox parse error in file:///D:/EV-Project/CEB-EV-backend/src/main/java/com/example/EVProject/controllers/MeterValueController.java (full report at: "D:\EV-Project\CEB-EV-backend\.metals\.reports\metals-full\2026-04-29\r_qdox-error_14-04-59-076.md")
+2026.04.29 14:04:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:04:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:00 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:05:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:02 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:35 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:35 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:37 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:44 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:44 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:44 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:45 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:45 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:45 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:45 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:46 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:46 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:46 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:46 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:47 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:05:47 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:48 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:05:48 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 237
+2026.04.29 14:05:48 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:05:48 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 238
+2026.04.29 14:05:48 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:49 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:05:50 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:57 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:05:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:00 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:01 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:03 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:38 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:40 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 262
+2026.04.29 14:06:40 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:39 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:40 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 264
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 268
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 269
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 270
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 271
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 272
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 273
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 274
+2026.04.29 14:06:41 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:42 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 278
+2026.04.29 14:06:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 2:06:43 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 280
+2026.04.29 14:06:42 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:43 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:43 WARN  no build target for: D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java
+2026.04.29 14:06:43 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:06:49 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:46:54 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 14:47:05 INFO  Shutting down server
+2026.04.29 14:47:05 INFO  Memory monitor stopped
+2026.04.29 14:47:05 INFO  shutting down Metals
+2026.04.29 14:47:05 INFO  Exiting server
+2026.04.29 14:47:05 ERROR Unexpected error initializing server: 
+org.eclipse.lsp4j.jsonrpc.ResponseErrorException: Request window/showMessageRequest failed with message: Canceled
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.handleResponse(RemoteEndpoint.java:214)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.consume(RemoteEndpoint.java:198)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.handleMessage(StreamMessageProducer.java:189)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.listen(StreamMessageProducer.java:97)
+	at org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor.run(ConcurrentMessageProcessor.java:97)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.lang.Thread.run(Thread.java:1583)
+

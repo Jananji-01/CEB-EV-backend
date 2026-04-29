@@ -1,10 +1,10 @@
 package com.example.EVProject.controllers;
 
 import com.example.EVProject.dto.MeterValueRequest;
-import com.example.EVProject.dto.MeterValueResponse;
 import com.example.EVProject.model.OcppMessageLog;
 import com.example.EVProject.repositories.OcppMessageLogRepository;
 import com.example.EVProject.services.MeterValueService;
+import com.example.EVProject.services.OcppActionService;
 import com.example.EVProject.utils.IdDeviceValidator;
 import com.example.EVProject.utils.OcppMessageParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,6 +25,7 @@ public class MeterValueController {
     private final MeterValueService meterService;
     private final IdDeviceValidator idDeviceValidator;
     private final OcppMessageLogRepository messageLogRepo;
+    private final OcppActionService ocppActionService;
 
     @PostMapping
     public ResponseEntity<?> handleMeterValues(
@@ -57,12 +57,11 @@ public class MeterValueController {
                         .body(Map.of("error", "Missing transactionId in payload"));
             }
 
-            // 4. Map meterValue array to DTO
+            // 4. (Optional) Save raw meter values using existing service
             ObjectMapper mapper = new ObjectMapper();
             MeterValueRequest request = new MeterValueRequest();
             request.setConnectorId(connectorId);
             request.setTransactionId(transactionId);
-
             if (payload.has("meterValue") && payload.get("meterValue").isArray()) {
                 request.setMeterValue(mapper.convertValue(
                         payload.get("meterValue"),
@@ -70,17 +69,14 @@ public class MeterValueController {
                                 java.util.List.class, MeterValueRequest.MeterReading.class
                         )
                 ));
+                meterService.saveMeterValues(request);
             }
 
-            // 5. Save meter values
-            meterService.saveMeterValues(request);
+            // 5.  REAL-TIME PROCESSING: delegate to shared OcppActionService
+            ocppActionService.handleMeterValues(idDevice, payload);
 
             // 6. Build MeterValues.conf response: [3, MessageId, {}]
-            Object[] ocppResponse = new Object[]{
-                    3,
-                    parsed.messageId(),
-                    new HashMap<>()
-            };
+            Object[] ocppResponse = new Object[]{3, parsed.messageId(), new HashMap<>()};
 
             // 7. Log incoming & outgoing messages
             if (messageLogRepo != null) {
@@ -108,13 +104,4 @@ public class MeterValueController {
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
     }
-
-
-//    @GetMapping("/{sessionId}")
-//    public ResponseEntity<List<MeterValueResponse>> getMeterValuesBySession(@PathVariable Long sessionId) {
-//        List<MeterValueResponse> response = meterService.getMeterValuesBySession(sessionId);
-//        return ResponseEntity.ok(response);
-//    }
-
-
 }
