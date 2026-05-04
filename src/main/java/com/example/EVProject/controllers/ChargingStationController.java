@@ -185,128 +185,6 @@ public class ChargingStationController {
         }
     }
 
-    // @PostMapping("/authorize")
-    // public ResponseEntity<?> handleAuthorize(
-    //         @RequestBody String rawBody,
-    //         @RequestHeader("IdDevice") String headerIdDevice) {
-
-    //     LocalDateTime receivedTime = LocalDateTime.now();
-
-    //     try {
-    //         // Validate IdDevice using your util class
-    //         idDeviceValidator.validate(headerIdDevice);
-
-    //         // Parse OCPP-like message
-    //         var parsed = OcppMessageParser.parse(rawBody);
-    //         if (!"Authorize".equalsIgnoreCase(parsed.action())) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Invalid action type. Expected 'Authorize'"));
-    //         }
-
-    //         // Extract IdDevice from request payload
-    //         String bodyIdDevice = parsed.payload().has("IdDevice")
-    //                 ? parsed.payload().get("IdDevice").asText()
-    //                 : null;
-
-    //         if (bodyIdDevice == null || bodyIdDevice.isEmpty()) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Missing IdDevice in payload"));
-    //         }
-
-    //         // Compare header and body IdDevice (must match)
-    //         if (!headerIdDevice.equals(bodyIdDevice)) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Header and payload IdDevice mismatch"));
-    //         }
-
-    //         // Validate the IdDevice in the payload (redundant but explicit)
-    //         idDeviceValidator.validate(bodyIdDevice);
-
-    //         // Check if IdTag already exists for this IdDevice
-    //         List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(bodyIdDevice);
-    //         IdTagInfo tagRecord;
-    //         String idTag;
-    //         LocalDateTime expiryDate;
-
-    //         IdTagInfo validTag = null;
-
-    //         for (IdTagInfo tag : existingTags) {
-    //             if (tag.getExpiryDate().isAfter(LocalDateTime.now())) {
-    //                 validTag = tag;
-    //                 break;
-    //             }
-    //         }
-
-    //         if (validTag != null) {
-    //             // reuse valid tag
-    //             tagRecord = validTag;
-    //             idTag = tagRecord.getIdTag();
-    //             expiryDate = tagRecord.getExpiryDate();
-    //         } else {
-    //             // Fetch SmartPlug details (for cebSerialNo or username)
-    //             SmartPlug plug = smartPlugRepository.findById(bodyIdDevice)
-    //                     .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + bodyIdDevice));
-
-    //             idDeviceValidator.validate(plug.getIdDevice());
-
-    //             String accountReference = (plug.getCebSerialNo() != null)
-    //                     ? plug.getCebSerialNo()
-    //                     : plug.getIdDevice();
-
-    //             idTag = generateIdTag(accountReference);
-    //             expiryDate = LocalDateTime.now().plusHours(6);
-
-    //             tagRecord = new IdTagInfo();
-    //             tagRecord.setIdDevice(bodyIdDevice);
-    //             tagRecord.setIdTag(idTag);
-    //             tagRecord.setStatus("Accepted");
-    //             tagRecord.setExpiryDate(expiryDate);
-    //             idTagInfoRepository.save(tagRecord);
-    //         }
-
-    //         // Build OCPP response according to documentation
-    //         Map<String, Object> idTagInfo = Map.of(
-    //                 "status", "Accepted",
-    //                 "expiryDate", expiryDate.toString() + "Z",
-    //                 "IdTag", idTag
-    //         );
-
-    //         Map<String, Object> payload = Map.of("idTagInfo", idTagInfo);
-    //         Object[] ocppResponse = new Object[]{
-    //                 3,
-    //                 parsed.messageId(),
-    //                 payload
-    //         };
-
-    //         // Optional logging (for debugging/traceability)
-    //         if (messageLogRepo != null) {
-    //             OcppMessageLog log = new OcppMessageLog();
-    //             log.setIdDevice(bodyIdDevice);
-    //             log.setMessageId(parsed.messageId());
-    //             log.setAction(parsed.action());
-    //             log.setMessageTypeId(parsed.messageTypeId());
-    //             log.setPayload(parsed.payload().toString());
-    //             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //             log.setReceivedAt(receivedTime);
-    //             log.setRespondedAt(LocalDateTime.now());
-    //             messageLogRepo.save(log);
-    //         }
-
-    //         return ResponseEntity.ok(ocppResponse);
-
-    //     } catch (IllegalArgumentException e) {
-    //         Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-    //         Map<String, Object> payload = Map.of("idTagInfo", idTagInfo);
-    //         Object[] ocppResponse = new Object[]{3, "AUTH-REQ-FAILED", payload};
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
-    //     }
-    // }
-
-
 @PostMapping("/authorize")
 public ResponseEntity<?> handleAuthorize(
         @RequestBody String rawBody,
@@ -318,9 +196,35 @@ public ResponseEntity<?> handleAuthorize(
         // Parse OCPP message
         var parsed = OcppMessageParser.parse(rawBody);
         
-        // Get ALL EV owners with idTag
+        // Extract IdDevice from payload
+        String bodyIdDevice = parsed.payload().has("IdDevice") 
+            ? parsed.payload().get("IdDevice").asText() 
+            : null;
+        
+        if (bodyIdDevice == null || bodyIdDevice.isEmpty()) {
+            System.out.println("❌ Authorize: Missing IdDevice in payload");
+            Object[] errorResponse = new Object[]{
+                3, parsed.messageId(),
+                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "Missing IdDevice in payload"))
+            };
+            return ResponseEntity.ok(errorResponse);
+        }
+        
+        // Validate header and body IdDevice match
+        if (!headerIdDevice.equals(bodyIdDevice)) {
+            System.out.println("❌ Authorize: Device ID mismatch - Header: " + headerIdDevice + ", Body: " + bodyIdDevice);
+            Object[] errorResponse = new Object[]{
+                3, parsed.messageId(),
+                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "Device ID mismatch"))
+            };
+            return ResponseEntity.ok(errorResponse);
+        }
+        
+        // ✅ TODO: In production, get the currently logged-in EV Owner from security context/session
+        // For now, get a random EV owner for testing via Postman
         List<EvOwner> allEvOwners = evOwnerRepository.findAll();
         List<EvOwner> evOwnersWithIdTag = new ArrayList<>();
+        
         for (EvOwner owner : allEvOwners) {
             if (owner.getIdTag() != null && !owner.getIdTag().isEmpty()) {
                 evOwnersWithIdTag.add(owner);
@@ -328,75 +232,77 @@ public ResponseEntity<?> handleAuthorize(
         }
         
         if (evOwnersWithIdTag.isEmpty()) {
-            System.out.println("❌ No EV owner with valid ID_TAG found");
+            System.out.println("❌ No EV owner with valid idTag found");
             Object[] errorResponse = new Object[]{
-                    3,
-                    parsed.messageId(),
-                    Map.of("idTagInfo", Map.of("status", "Invalid"))
+                3, parsed.messageId(),
+                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "No EV owners registered"))
             };
             return ResponseEntity.ok(errorResponse);
         }
         
-        // Get random EV owner
+        // Get random EV owner (for testing)
         Random random = new Random();
-        EvOwner randomOwner = evOwnersWithIdTag.get(random.nextInt(evOwnersWithIdTag.size()));
-        String idTag = randomOwner.getIdTag();
+        EvOwner evOwner = evOwnersWithIdTag.get(random.nextInt(evOwnersWithIdTag.size()));
+        String idTag = evOwner.getIdTag();
         
-        System.out.println("✅ Selected EV Owner: " + randomOwner.getUsername() + " with ID_TAG: " + idTag);
+        System.out.println("✅ Selected EV Owner: " + evOwner.getUsername() + " with idTag: " + idTag);
+        System.out.println("✅ Authorizing for device: " + headerIdDevice);
         
-        // ✅ CRITICAL: Check if idTag exists in ID_TAG_INFO, if not, create it
+        // ✅ Store authorization in IdTagInfo table
         Optional<IdTagInfo> existingTagOpt = idTagInfoRepository.findByIdTag(idTag);
         IdTagInfo tagInfo;
         LocalDateTime expiryDate;
-        String status;
         
         if (existingTagOpt.isPresent()) {
             tagInfo = existingTagOpt.get();
             expiryDate = tagInfo.getExpiryDate();
-            status = tagInfo.getStatus();
-            System.out.println("✅ Found existing ID_TAG_INFO - Expiry: " + expiryDate + ", Status: " + status);
-        } else {
-            // ✅ Create new ID_TAG_INFO entry
-            expiryDate = LocalDateTime.now().plusYears(1);
-            status = "Accepted";
             
+            // Update the device ID (track which device this idTag is being used on)
+            tagInfo.setIdDevice(headerIdDevice);
+            idTagInfoRepository.save(tagInfo);
+            
+            System.out.println("✅ Updated existing IdTagInfo for idTag: " + idTag);
+        } else {
+            // Create new IdTagInfo record
+            expiryDate = LocalDateTime.now().plusHours(6); // 6 hours validity
             tagInfo = new IdTagInfo();
             tagInfo.setIdTag(idTag);
-            tagInfo.setIdDevice(headerIdDevice);  // Link to the device
-            tagInfo.setStatus(status);
+            tagInfo.setIdDevice(headerIdDevice);
+            tagInfo.setStatus("Accepted");
             tagInfo.setExpiryDate(expiryDate);
             tagInfo.setCreatedAt(LocalDateTime.now());
             idTagInfoRepository.save(tagInfo);
             
-            System.out.println("✅ Created new ID_TAG_INFO for idTag: " + idTag);
+            System.out.println("✅ Created new IdTagInfo for idTag: " + idTag);
         }
         
-        // Build response
+        // Build OCPP response
         Map<String, Object> idTagInfoResponse = new HashMap<>();
-        idTagInfoResponse.put("status", status);
+        idTagInfoResponse.put("status", "Accepted");
         idTagInfoResponse.put("IdTag", idTag);
         idTagInfoResponse.put("expiryDate", expiryDate.toString() + "Z");
         
         Object[] ocppResponse = new Object[]{
-                3,
-                parsed.messageId(),
-                Map.of("idTagInfo", idTagInfoResponse)
+            3,
+            parsed.messageId(),
+            Map.of("idTagInfo", idTagInfoResponse)
         };
         
-        System.out.println("✅ Returning response with ID_TAG: " + idTag);
+        System.out.println("✅ Authorize successful - Returning idTag: " + idTag + " for device: " + headerIdDevice);
         
         return ResponseEntity.ok(ocppResponse);
         
     } catch (Exception e) {
         e.printStackTrace();
         Object[] errorResponse = new Object[]{
-                3,
-                "AUTH-REQ-FAILED",
-                Map.of("idTagInfo", Map.of("status", "Invalid"))
+            3,
+            "AUTH-REQ-FAILED",
+            Map.of("idTagInfo", Map.of("status", "Invalid", "message", e.getMessage()))
         };
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
+
 
     @PostMapping("/startTransaction")
     @Transactional

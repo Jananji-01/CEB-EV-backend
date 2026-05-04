@@ -1302,74 +1302,146 @@ public class OcppMessageProcessor {
     /**
      * 3. StartTransaction Handler
      */
-    private ObjectNode handleStartTransaction(String deviceId, JsonNode payload) {
-        ObjectNode response = objectMapper.createObjectNode();
-        ObjectNode idTagInfo = objectMapper.createObjectNode();
+private ObjectNode handleStartTransaction(String deviceId, String messageId, JsonNode payload) {
+    ObjectNode response = objectMapper.createObjectNode();
+    ObjectNode idTagInfo = objectMapper.createObjectNode();
 
-        try {
-            String idTag = payload.path("idTag").asText();
-            int connectorId = payload.path("connectorId").asInt(1);
-            long meterStart = payload.path("meterStart").asLong(0);
-
-            // Validate idTag
-            var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
-            if (tagOpt.isEmpty() || !"Accepted".equals(tagOpt.get(0).getStatus())) {
-                idTagInfo.put("status", "Invalid");
-                response.set("idTagInfo", idTagInfo);
-                return response;
-            }
-
-            // Check for existing active session
-            if (chargingSessionRepository.findByIdDeviceAndEndTimeIsNull(deviceId).isPresent()) {
-                idTagInfo.put("status", "ConcurrentTx");
-                response.set("idTagInfo", idTagInfo);
-                return response;
-            }
-
-            // Retrieve EV owner account number using the idTag
-            String eAccountNo = null;
-            Optional<EvOwner> ownerOpt = evOwnerRepository.findByIdTag(idTag);
-            if (ownerOpt.isPresent()) {
-                eAccountNo = ownerOpt.get().getEAccountNumber();
-                System.out.println("💾 [OCPP] Found owner account " + eAccountNo + " for idTag " + idTag);
-            } else {
-                System.out.println("⚠️ [OCPP] No EV owner found for idTag " + idTag);
-            }
-
-            // Create new charging session
-            ChargingSession session = new ChargingSession();
-            session.setIdDevice(deviceId);
-            session.setStartTime(LocalDateTime.now());
-            session.setChargingMode("FAST");
-            session.setTotalConsumption(0.0);
-            session.setAmount(0.0);
-            session.setSoc(0.0);
-            session.setEAccountNo(eAccountNo);
-
-            ChargingSession savedSession = chargingSessionRepository.save(session);
-
-            idTagInfo.put("status", "Accepted");
+    try {
+        String idTag = payload.path("idTag").asText();
+        int connectorId = payload.path("connectorId").asInt(1);
+        long meterStart = payload.path("meterStart").asLong(0);
+        
+        System.out.println("🚀 [StartTransaction] Device: " + deviceId + ", idTag: " + idTag);
+        
+        // ✅ Validate idTag exists
+        if (idTag == null || idTag.isEmpty()) {
+            idTagInfo.put("status", "Invalid");
+            idTagInfo.put("message", "Missing idTag");
             response.set("idTagInfo", idTagInfo);
-            response.put("transactionId", savedSession.getSessionId());
-
-            // Send WebSocket message to frontend
-            Map<String, Object> frontendMessage = new HashMap<>();
-            frontendMessage.put("type", "TRANSACTION_STARTED");
-            frontendMessage.put("transactionId", savedSession.getSessionId());
-            frontendMessage.put("idDevice", deviceId);
-            frontendMessage.put("timestamp", LocalDateTime.now().toString());
-
-            messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
-            System.out.println("✅ Sent TRANSACTION_STARTED to frontend: " + frontendMessage);
-
-        } catch (Exception e) {
-            idTagInfo.put("status", "InternalError");
-            response.set("idTagInfo", idTagInfo);
-            e.printStackTrace();
+            System.out.println("❌ [StartTransaction] Missing idTag");
+            return response;
         }
-
-        return response;
+        
+        // ✅ STEP 1: Check if idTag belongs to a valid EV Owner
+        Optional<EvOwner> evOwnerOpt = evOwnerRepository.findByIdTag(idTag);
+        if (evOwnerOpt.isEmpty()) {
+            idTagInfo.put("status", "Invalid");
+            idTagInfo.put("message", "idTag not associated with any EV owner");
+            response.set("idTagInfo", idTagInfo);
+            System.out.println("❌ [StartTransaction] idTag not found in EvOwner table: " + idTag);
+            return response;
+        }
+        
+        EvOwner evOwner = evOwnerOpt.get();
+        System.out.println("✅ Found EV Owner: " + evOwner.getUsername() + ", Account: " + evOwner.getEAccountNumber());
+        
+        // ✅ STEP 2: Check if idTag is valid in IdTagInfo
+        // Don't filter by device ID - same idTag can be used on any device
+        Optional<IdTagInfo> tagOpt = idTagInfoRepository.findByIdTag(idTag);
+        
+        LocalDateTime now = LocalDateTime.now();
+        String tagStatus = "Accepted";
+        LocalDateTime expiryDate = null;
+        
+        if (tagOpt.isPresent()) {
+            IdTagInfo tag = tagOpt.get();
+            expiryDate = tag.getExpiryDate();
+            
+            // Check expiry
+            if (tag.getExpiryDate() != null && tag.getExpiryDate().isBefore(now)) {
+                tagStatus = "Expired";
+                System.out.println("❌ [StartTransaction] idTag expired: " + idTag);
+            } else if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
+                tagStatus = tag.getStatus();
+                System.out.println("❌ [StartTransaction] idTag status: " + tag.getStatus());
+            } else {
+                System.out.println("✅ [StartTransaction] idTag is valid, expires: " + expiryDate);
+                
+                // ✅ OPTIONAL: Update the idDevice for tracking (but don't require it for validation)
+                if (!deviceId.equals(tag.getIdDevice())) {
+                    System.out.println("📝 Note: idTag " + idTag + " was previously authorized for device " + tag.getIdDevice() + 
+                                     ", now using device " + deviceId);
+                    // You can update it if you want to track the last used device
+                    // tag.setIdDevice(deviceId);
+                    // idTagInfoRepository.save(tag);
+                }
+            }
+        } else {
+            // ❌ No IdTagInfo record exists - this shouldn't happen if Authorize was called first
+            System.out.println("❌ No IdTagInfo record found for idTag: " + idTag);
+            System.out.println("   Device should call Authorize before StartTransaction");
+            idTagInfo.put("status", "Invalid");
+            idTagInfo.put("message", "idTag not authorized. Please call Authorize first");
+            response.set("idTagInfo", idTagInfo);
+            return response;
+        }
+        
+        if (!"Accepted".equals(tagStatus)) {
+            idTagInfo.put("status", tagStatus);
+            if (expiryDate != null) {
+                idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
+            }
+            response.set("idTagInfo", idTagInfo);
+            return response;
+        }
+        
+        // ✅ STEP 3: Check for existing active session for this device
+        Optional<ChargingSession> existingSession = chargingSessionRepository
+            .findByIdDeviceAndEndTimeIsNull(deviceId);
+        
+        if (existingSession.isPresent()) {
+            idTagInfo.put("status", "ConcurrentTx");
+            idTagInfo.put("message", "Active transaction already exists for this device");
+            response.set("idTagInfo", idTagInfo);
+            System.out.println("❌ [StartTransaction] Concurrent transaction for device: " + deviceId);
+            return response;
+        }
+        
+        // ✅ Create new charging session
+        ChargingSession session = new ChargingSession();
+        session.setIdDevice(deviceId);
+        session.setStartTime(now);
+        session.setChargingMode("FAST");
+        session.setTotalConsumption(0.0);
+        session.setAmount(0.0);
+        session.setSoc(0.0);
+        session.setEAccountNo(evOwner.getEAccountNumber());
+        
+        ChargingSession savedSession = chargingSessionRepository.save(session);
+        
+        // ✅ Build successful response
+        idTagInfo.put("status", "Accepted");
+        if (expiryDate != null) {
+            idTagInfo.put("expiryDate", expiryDate.toString() + "Z");
+        }
+        response.set("idTagInfo", idTagInfo);
+        response.put("transactionId", savedSession.getSessionId());
+        
+        System.out.println("✅ [StartTransaction] SUCCESS! Transaction ID: " + savedSession.getSessionId());
+        System.out.println("   EV Owner: " + evOwner.getUsername() + " (" + evOwner.getEAccountNumber() + ")");
+        System.out.println("   Device: " + deviceId);
+        
+        // Send WebSocket notification
+        Map<String, Object> frontendMessage = new HashMap<>();
+        frontendMessage.put("type", "TRANSACTION_STARTED");
+        frontendMessage.put("transactionId", savedSession.getSessionId());
+        frontendMessage.put("idDevice", deviceId);
+        frontendMessage.put("idTag", idTag);
+        frontendMessage.put("eAccountNo", evOwner.getEAccountNumber());
+        frontendMessage.put("timestamp", now.toString());
+        
+        messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
+        
+    } catch (Exception e) {
+        System.err.println("❌ [StartTransaction] Error: " + e.getMessage());
+        e.printStackTrace();
+        idTagInfo.put("status", "InternalError");
+        idTagInfo.put("message", e.getMessage());
+        response.set("idTagInfo", idTagInfo);
     }
+    
+    return response;
+}
 
     /**
      * 4. MeterValues Handler
