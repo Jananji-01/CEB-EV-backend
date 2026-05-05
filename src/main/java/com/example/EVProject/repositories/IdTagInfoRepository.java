@@ -38,7 +38,7 @@ public interface IdTagInfoRepository extends JpaRepository<IdTagInfo, Integer> {
 
     List<IdTagInfo> findByIdDevice(String idDevice);
 
-    Optional<IdTagInfo> findByIdTag(String idTag);
+    List<IdTagInfo> findByIdTag(String idTag);
 
         // ✅ Returns List (for when you want all records)
     List<IdTagInfo> findByIdTagAndIdDevice(String idTag, String idDevice);
