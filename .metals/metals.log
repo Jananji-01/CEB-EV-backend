@@ -206,3 +206,52 @@ org.eclipse.lsp4j.jsonrpc.ResponseErrorException: Request window/showMessageRequ
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
 	at java.lang.Thread.run(Thread.java:1583)
 
+2026.04.29 15:08:33 INFO  Started: Metals version 1.6.7 in folders 'D:\EV-Project\CEB-EV-backend' for client Visual Studio Code 1.117.0.
+2026.04.29 15:08:33 INFO  Memory monitor started
+2026.04.29 15:08:36 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026.04.29 15:08:37 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:40 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 3:08:40 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 3
+2026.04.29 15:08:53 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:53 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:53 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:53 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 3:08:54 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 10
+Apr 29, 2026 3:08:54 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 11
+Apr 29, 2026 3:08:54 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 12
+2026.04.29 15:08:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:55 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 3:08:56 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 17
+2026.04.29 15:08:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+Apr 29, 2026 3:08:57 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 18
+2026.04.29 15:08:56 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:08:59 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:09:15 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:09:15 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:09:19 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\MeterValueController.java. Using fallback presentation compiler.
+2026.04.29 15:15:13 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\ChargingStationController.java. Using fallback presentation compiler.
+2026.04.29 15:15:15 INFO  no build target found for D:\EV-Project\CEB-EV-backend\src\main\java\com\example\EVProject\controllers\ChargingStationController.java. Using fallback presentation compiler.
+2026.04.29 15:57:01 INFO  Shutting down server
+2026.04.29 15:57:01 INFO  Memory monitor stopped
+2026.04.29 15:57:01 INFO  shutting down Metals
+2026.04.29 15:57:01 INFO  Exiting server
+2026.04.29 15:57:02 ERROR Unexpected error initializing server: 
+org.eclipse.lsp4j.jsonrpc.ResponseErrorException: Request window/showMessageRequest failed with message: Canceled
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.handleResponse(RemoteEndpoint.java:214)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.consume(RemoteEndpoint.java:198)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.handleMessage(StreamMessageProducer.java:189)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.listen(StreamMessageProducer.java:97)
+	at org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor.run(ConcurrentMessageProcessor.java:97)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.lang.Thread.run(Thread.java:1583)
+
