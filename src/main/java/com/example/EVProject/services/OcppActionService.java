@@ -115,7 +115,7 @@ public class OcppActionService {
 
             // Validate idTag
             var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, deviceId);
-            if (tagOpt.isEmpty() || !"Accepted".equals(tagOpt.get().getStatus())) {
+            if (tagOpt.isEmpty() || !"Accepted".equals(tagOpt.get(0).getStatus())) {
                 idTagInfo.put("status", "Invalid");
                 response.set("idTagInfo", idTagInfo);
                 return response;

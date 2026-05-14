@@ -52,11 +52,15 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "smart_plug")
 public class SmartPlug {
@@ -129,5 +133,13 @@ public class SmartPlug {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setIdDevice(String idDevice) {
+    this.idDevice = idDevice;
+    }
+
+    public void setChargePointModel(String chargePointModel) {
+        this.chargePointModel = chargePointModel;
     }
 }
