@@ -196,33 +196,8 @@ public ResponseEntity<?> handleAuthorize(
     try {
         // Parse OCPP message
         var parsed = OcppMessageParser.parse(rawBody);
-        
-        // Extract IdDevice from payload
-        String bodyIdDevice = parsed.payload().has("IdDevice") 
-            ? parsed.payload().get("IdDevice").asText() 
-            : null;
-        
-        if (bodyIdDevice == null || bodyIdDevice.isEmpty()) {
-            System.out.println("❌ Authorize: Missing IdDevice in payload");
-            Object[] errorResponse = new Object[]{
-                3, parsed.messageId(),
-                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "Missing IdDevice in payload"))
-            };
-            return ResponseEntity.ok(errorResponse);
-        }
-        
-        // Validate header and body IdDevice match
-        if (!headerIdDevice.equals(bodyIdDevice)) {
-            System.out.println("❌ Authorize: Device ID mismatch - Header: " + headerIdDevice + ", Body: " + bodyIdDevice);
-            Object[] errorResponse = new Object[]{
-                3, parsed.messageId(),
-                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "Device ID mismatch"))
-            };
-            return ResponseEntity.ok(errorResponse);
-        }
-        
-        // ✅ TODO: In production, get the currently logged-in EV Owner from security context/session
-        // For now, get a random EV owner for testing via Postman
+
+        // Get ALL EV owners with idTag
         List<EvOwner> allEvOwners = evOwnerRepository.findAll();
         List<EvOwner> evOwnersWithIdTag = new ArrayList<>();
         
@@ -231,7 +206,7 @@ public ResponseEntity<?> handleAuthorize(
                 evOwnersWithIdTag.add(owner);
             }
         }
-        
+
         if (evOwnersWithIdTag.isEmpty()) {
             System.out.println("❌ No EV owner with valid idTag found");
             Object[] errorResponse = new Object[]{
@@ -240,32 +215,30 @@ public ResponseEntity<?> handleAuthorize(
             };
             return ResponseEntity.ok(errorResponse);
         }
-        
-        // Get random EV owner (for testing)
+
+        // Get random EV owner
         Random random = new Random();
-        EvOwner evOwner = evOwnersWithIdTag.get(random.nextInt(evOwnersWithIdTag.size()));
-        String idTag = evOwner.getIdTag();
-        
-        System.out.println("✅ Selected EV Owner: " + evOwner.getUsername() + " with idTag: " + idTag);
-        System.out.println("✅ Authorizing for device: " + headerIdDevice);
-        
-        // ✅ Store authorization in IdTagInfo table
-        List<IdTagInfo> existingTagOpt = idTagInfoRepository.findByIdTag(idTag);
+        EvOwner randomOwner = evOwnersWithIdTag.get(random.nextInt(evOwnersWithIdTag.size()));
+        String idTag = randomOwner.getIdTag();
+
+        System.out.println("✅ Selected EV Owner: " + randomOwner.getUsername() + " with ID_TAG: " + idTag);
+
+        // ✅ CRITICAL: Check if idTag exists in ID_TAG_INFO, if not, create it
+        Optional<IdTagInfo> existingTagOpt = idTagInfoRepository.findByIdTag(idTag);
         IdTagInfo tagInfo;
         LocalDateTime expiryDate;
-        
-        if (!existingTagOpt.isEmpty()) {
-            tagInfo = existingTagOpt.get(0);
+        String status;
+
+        if (existingTagOpt.isPresent()) {
+            tagInfo = existingTagOpt.get();
             expiryDate = tagInfo.getExpiryDate();
-            
-            // Update the device ID (track which device this idTag is being used on)
-            tagInfo.setIdDevice(headerIdDevice);
-            idTagInfoRepository.save(tagInfo);
-            
-            System.out.println("✅ Updated existing IdTagInfo for idTag: " + idTag);
+            status = tagInfo.getStatus();
+            System.out.println("✅ Found existing ID_TAG_INFO - Expiry: " + expiryDate + ", Status: " + status);
         } else {
-            // Create new IdTagInfo record
-            expiryDate = LocalDateTime.now(ZoneOffset.UTC).plusHours(6); // 6 hours validity
+            // ✅ Create new ID_TAG_INFO entry
+            expiryDate = LocalDateTime.now().plusYears(1);
+            status = "Accepted";
+
             tagInfo = new IdTagInfo();
             tagInfo.setIdTag(idTag);
             tagInfo.setIdDevice(headerIdDevice);
@@ -273,26 +246,26 @@ public ResponseEntity<?> handleAuthorize(
             tagInfo.setExpiryDate(expiryDate);
             tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
             idTagInfoRepository.save(tagInfo);
-            
-            System.out.println("✅ Created new IdTagInfo for idTag: " + idTag);
+
+            System.out.println("✅ Created new ID_TAG_INFO for idTag: " + idTag);
         }
-        
-        // Build OCPP response
+
+        // Build response
         Map<String, Object> idTagInfoResponse = new HashMap<>();
         idTagInfoResponse.put("status", "Accepted");
         idTagInfoResponse.put("IdTag", idTag);
         idTagInfoResponse.put("expiryDate", expiryDate.toString() + "Z");
-        
+
         Object[] ocppResponse = new Object[]{
             3,
             parsed.messageId(),
             Map.of("idTagInfo", idTagInfoResponse)
         };
-        
-        System.out.println("✅ Authorize successful - Returning idTag: " + idTag + " for device: " + headerIdDevice);
-        
+
+        System.out.println("✅ Returning response with ID_TAG: " + idTag);
+
         return ResponseEntity.ok(ocppResponse);
-        
+
     } catch (Exception e) {
         e.printStackTrace();
         Object[] errorResponse = new Object[]{
@@ -343,7 +316,7 @@ public ResponseEntity<?> handleAuthorize(
 
     private Integer mapStatusStringToCode(String status) {
         return switch (status) {
-            case "Available" -> 1;
+            case "Available" -> 3;
             case "Preparing" -> 2;
             case "Charging" -> 3;
             case "Finishing" -> 4;
@@ -369,8 +342,8 @@ public ResponseEntity<?> handleAuthorize(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
 
-    LocalDateTime receivedAt = LocalDateTime.now(ZoneOffset.UTC);
-    
+    LocalDateTime receivedAt = LocalDateTime.now();
+
     try {
         // ✅ Validate header IdDevice
         idDeviceValidator.validate(idDevice);
@@ -398,7 +371,7 @@ public ResponseEntity<?> handleAuthorize(
         if (sessionOpt == null || sessionOpt.getSessionId() == null) {
             Map<String, Object> idTagInfo = Map.of("status", "Invalid");
             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-            
+
             OcppMessageLog log = new OcppMessageLog();
             log.setIdDevice(idDevice);
             log.setMessageId(parsed.messageId());
@@ -409,7 +382,7 @@ public ResponseEntity<?> handleAuthorize(
             log.setReceivedAt(receivedAt);
             log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(log);
-            
+
             return ResponseEntity.ok(ocppResponse);
         }
 
@@ -417,11 +390,11 @@ public ResponseEntity<?> handleAuthorize(
         if (idTag != null && !idTag.isEmpty()) {
             // ✅ FIX: Use List instead of Optional
             List<IdTagInfo> tags = idTagInfoRepository.findByIdTagAndIdDevice(idTag, idDevice);
-            
+
             if (tags.isEmpty()) {
                 Map<String, Object> idTagInfo = Map.of("status", "Invalid");
                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                
+
                 OcppMessageLog log = new OcppMessageLog();
                 log.setIdDevice(idDevice);
                 log.setMessageId(parsed.messageId());
@@ -432,17 +405,17 @@ public ResponseEntity<?> handleAuthorize(
                 log.setReceivedAt(receivedAt);
                 log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
-                
+
                 return ResponseEntity.ok(ocppResponse);
             }
 
             // Get the first tag (or most recent - you can sort by createdAt desc)
             IdTagInfo tag = tags.get(0);
-            
+
             if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
                 Map<String, Object> idTagInfo = Map.of("status", tag.getStatus());
                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                
+
                 OcppMessageLog log = new OcppMessageLog();
                 log.setIdDevice(idDevice);
                 log.setMessageId(parsed.messageId());
@@ -453,14 +426,14 @@ public ResponseEntity<?> handleAuthorize(
                 log.setReceivedAt(receivedAt);
                 log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
-                
+
                 return ResponseEntity.ok(ocppResponse);
             }
-            
-            if (tag.getExpiryDate().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
+
+            if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
                 Map<String, Object> idTagInfo = Map.of("status", "Expired");
                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-                
+
                 OcppMessageLog log = new OcppMessageLog();
                 log.setIdDevice(idDevice);
                 log.setMessageId(parsed.messageId());
@@ -471,7 +444,7 @@ public ResponseEntity<?> handleAuthorize(
                 log.setReceivedAt(receivedAt);
                 log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
-                
+
                 return ResponseEntity.ok(ocppResponse);
             }
         }
@@ -502,8 +475,8 @@ public ResponseEntity<?> handleAuthorize(
 
         // ✅ Update session end info
         chargingSessionService.endChargingSession(transactionId, meterStop, timestamp);
-        
-        System.out.println("✅ Session " + transactionId + " ended. Total consumption: " + 
+
+        System.out.println("✅ Session " + transactionId + " ended. Total consumption: " +
                         (meterStop != null ? meterStop + " kWh" : "N/A"));
 
         // Asynchronously call billing API
@@ -543,7 +516,7 @@ public ResponseEntity<?> handleAuthorize(
 
     } catch (Exception e) {
         e.printStackTrace();
-        
+
         try {
             var parsed = OcppMessageParser.parse(rawBody);
             OcppMessageLog log = new OcppMessageLog();
@@ -560,12 +533,12 @@ public ResponseEntity<?> handleAuthorize(
         } catch (Exception logEx) {
             System.err.println("Failed to save error log: " + logEx.getMessage());
         }
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
     }
 }
-    
+
     @PostMapping("/bootNotification")
     public ResponseEntity<?> handleBootNotification(
             @RequestBody String rawBody,
@@ -613,3 +586,5 @@ public ResponseEntity<?> handleAuthorize(
         }
     }
 }
+
+
