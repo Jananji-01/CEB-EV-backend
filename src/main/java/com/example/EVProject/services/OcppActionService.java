@@ -69,7 +69,7 @@ public class OcppActionService {
             smartPlugRepository.save(plug);
 
             response.put("status", "Accepted");
-            response.put("currentTime", LocalDateTime.now(ZoneOffset.UTC).toString());
+            response.put("currentTime", LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30).toString());
             response.put("interval", 300);
         } catch (Exception e) {
             response.put("status", "Rejected");
@@ -87,12 +87,12 @@ public class OcppActionService {
         if (deviceIdFromPayload == null || deviceIdFromPayload.isEmpty() || !deviceId.equals(deviceIdFromPayload)) {
             idTagInfo.put("status", "Invalid");
         } else {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30);
             var tagOpt = idTagInfoRepository.findTopByIdDeviceOrderByCreatedAtDesc(deviceIdFromPayload);
             if (tagOpt.isPresent() && tagOpt.get().getExpiryDate().isAfter(now)) {
                 IdTagInfo tag = tagOpt.get();
                 idTagInfo.put("status", "Accepted");
-                idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).toString());
+                idTagInfo.put("expiryDate", tag.getExpiryDate().atZone(ZoneOffset.UTC).plusHours(5).plusMinutes(30).toString());
                 idTagInfo.put("IdTag", tag.getIdTag());
             } else {
                 idTagInfo.put("status", "Invalid");
@@ -138,7 +138,7 @@ public class OcppActionService {
             // Create new charging session
             ChargingSession session = new ChargingSession();
             session.setIdDevice(deviceId);
-            session.setStartTime(LocalDateTime.now());
+            session.setStartTime(LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30));
             session.setChargingMode("FAST");
             session.setTotalConsumption(0.0);
             session.setAmount(0.0);
@@ -155,7 +155,7 @@ public class OcppActionService {
             frontendMessage.put("type", "TRANSACTION_STARTED");
             frontendMessage.put("transactionId", saved.getSessionId());
             frontendMessage.put("idDevice", deviceId);
-            frontendMessage.put("timestamp", LocalDateTime.now().toString());
+            frontendMessage.put("timestamp", LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30).toString());
             messagingTemplate.convertAndSend("/topic/device/" + deviceId, frontendMessage);
 
         } catch (Exception e) {
@@ -185,7 +185,7 @@ public class OcppActionService {
             }
 
             ChargingSession session = sessionOpt.get();
-            LocalDateTime endTime = LocalDateTime.now();
+            LocalDateTime endTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30);
             session.setEndTime(endTime);
 
             double totalKWh = session.getTotalConsumption() != null ? session.getTotalConsumption() : 0.0;
@@ -322,7 +322,7 @@ public class OcppActionService {
     // ========== Heartbeat ==========
     public ObjectNode handleHeartbeat() {
         ObjectNode response = objectMapper.createObjectNode();
-        response.put("currentTime", LocalDateTime.now(ZoneOffset.UTC).toString());
+        response.put("currentTime", LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30).toString());
         return response;
     }
 

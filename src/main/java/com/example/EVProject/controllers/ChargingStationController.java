@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,7 @@ public class ChargingStationController {
             @RequestHeader("DIGEST") String digest,
             @RequestHeader("IdDevice") String idDevice) {
 
-        LocalDateTime receivedTime = LocalDateTime.now();
+        LocalDateTime receivedTime = LocalDateTime.now(ZoneOffset.UTC);
         OcppMessageLog logEntry = new OcppMessageLog();
 
         try {
@@ -130,7 +131,7 @@ public class ChargingStationController {
 
             Object[] ocppResponse = new Object[]{3, parsed.messageId(), new HashMap<>()};
             logEntry.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-            logEntry.setRespondedAt(LocalDateTime.now());
+            logEntry.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(logEntry);
 
             return ResponseEntity.ok(ocppResponse);
@@ -139,7 +140,7 @@ public class ChargingStationController {
         } catch (Exception e) {
             e.printStackTrace();
             logEntry.setResponse("{\"error\": \"" + e.getMessage() + "\"}");
-            logEntry.setRespondedAt(LocalDateTime.now());
+            logEntry.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(logEntry);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "INTERNAL_SERVER_ERROR"));
         }
@@ -150,7 +151,7 @@ public class ChargingStationController {
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String idDevice) {
 
-        LocalDateTime receivedTime = LocalDateTime.now();
+        LocalDateTime receivedTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(5).plusMinutes(30);
         try {
             idDeviceValidator.validate(idDevice);
             var parsed = OcppMessageParser.parse(rawBody);
@@ -172,7 +173,7 @@ public class ChargingStationController {
                 log.setPayload(parsed.payload().toString());
                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
                 log.setReceivedAt(receivedTime);
-                log.setRespondedAt(LocalDateTime.now());
+                log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
             }
             return ResponseEntity.ok(ocppResponse);
@@ -185,134 +186,12 @@ public class ChargingStationController {
         }
     }
 
-    // @PostMapping("/authorize")
-    // public ResponseEntity<?> handleAuthorize(
-    //         @RequestBody String rawBody,
-    //         @RequestHeader("IdDevice") String headerIdDevice) {
-
-    //     LocalDateTime receivedTime = LocalDateTime.now();
-
-    //     try {
-    //         // Validate IdDevice using your util class
-    //         idDeviceValidator.validate(headerIdDevice);
-
-    //         // Parse OCPP-like message
-    //         var parsed = OcppMessageParser.parse(rawBody);
-    //         if (!"Authorize".equalsIgnoreCase(parsed.action())) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Invalid action type. Expected 'Authorize'"));
-    //         }
-
-    //         // Extract IdDevice from request payload
-    //         String bodyIdDevice = parsed.payload().has("IdDevice")
-    //                 ? parsed.payload().get("IdDevice").asText()
-    //                 : null;
-
-    //         if (bodyIdDevice == null || bodyIdDevice.isEmpty()) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Missing IdDevice in payload"));
-    //         }
-
-    //         // Compare header and body IdDevice (must match)
-    //         if (!headerIdDevice.equals(bodyIdDevice)) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Header and payload IdDevice mismatch"));
-    //         }
-
-    //         // Validate the IdDevice in the payload (redundant but explicit)
-    //         idDeviceValidator.validate(bodyIdDevice);
-
-    //         // Check if IdTag already exists for this IdDevice
-    //         List<IdTagInfo> existingTags = idTagInfoRepository.findByIdDevice(bodyIdDevice);
-    //         IdTagInfo tagRecord;
-    //         String idTag;
-    //         LocalDateTime expiryDate;
-
-    //         IdTagInfo validTag = null;
-
-    //         for (IdTagInfo tag : existingTags) {
-    //             if (tag.getExpiryDate().isAfter(LocalDateTime.now())) {
-    //                 validTag = tag;
-    //                 break;
-    //             }
-    //         }
-
-    //         if (validTag != null) {
-    //             // reuse valid tag
-    //             tagRecord = validTag;
-    //             idTag = tagRecord.getIdTag();
-    //             expiryDate = tagRecord.getExpiryDate();
-    //         } else {
-    //             // Fetch SmartPlug details (for cebSerialNo or username)
-    //             SmartPlug plug = smartPlugRepository.findById(bodyIdDevice)
-    //                     .orElseThrow(() -> new IllegalArgumentException("IdDevice not found: " + bodyIdDevice));
-
-    //             idDeviceValidator.validate(plug.getIdDevice());
-
-    //             String accountReference = (plug.getCebSerialNo() != null)
-    //                     ? plug.getCebSerialNo()
-    //                     : plug.getIdDevice();
-
-    //             idTag = generateIdTag(accountReference);
-    //             expiryDate = LocalDateTime.now().plusHours(6);
-
-    //             tagRecord = new IdTagInfo();
-    //             tagRecord.setIdDevice(bodyIdDevice);
-    //             tagRecord.setIdTag(idTag);
-    //             tagRecord.setStatus("Accepted");
-    //             tagRecord.setExpiryDate(expiryDate);
-    //             idTagInfoRepository.save(tagRecord);
-    //         }
-
-    //         // Build OCPP response according to documentation
-    //         Map<String, Object> idTagInfo = Map.of(
-    //                 "status", "Accepted",
-    //                 "expiryDate", expiryDate.toString() + "Z",
-    //                 "IdTag", idTag
-    //         );
-
-    //         Map<String, Object> payload = Map.of("idTagInfo", idTagInfo);
-    //         Object[] ocppResponse = new Object[]{
-    //                 3,
-    //                 parsed.messageId(),
-    //                 payload
-    //         };
-
-    //         // Optional logging (for debugging/traceability)
-    //         if (messageLogRepo != null) {
-    //             OcppMessageLog log = new OcppMessageLog();
-    //             log.setIdDevice(bodyIdDevice);
-    //             log.setMessageId(parsed.messageId());
-    //             log.setAction(parsed.action());
-    //             log.setMessageTypeId(parsed.messageTypeId());
-    //             log.setPayload(parsed.payload().toString());
-    //             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //             log.setReceivedAt(receivedTime);
-    //             log.setRespondedAt(LocalDateTime.now());
-    //             messageLogRepo.save(log);
-    //         }
-
-    //         return ResponseEntity.ok(ocppResponse);
-
-    //     } catch (IllegalArgumentException e) {
-    //         Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-    //         Map<String, Object> payload = Map.of("idTagInfo", idTagInfo);
-    //         Object[] ocppResponse = new Object[]{3, "AUTH-REQ-FAILED", payload};
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ocppResponse);
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(Map.of("error", "INTERNAL_SERVER_ERROR"));
-    //     }
-    // }
-
-
 @PostMapping("/authorize")
 public ResponseEntity<?> handleAuthorize(
         @RequestBody String rawBody,
         @RequestHeader("IdDevice") String headerIdDevice) {
 
-    LocalDateTime receivedTime = LocalDateTime.now();
+    LocalDateTime receivedTime = LocalDateTime.now(ZoneOffset.UTC);
 
     try {
         // Parse OCPP message
@@ -321,6 +200,7 @@ public ResponseEntity<?> handleAuthorize(
         // Get ALL EV owners with idTag
         List<EvOwner> allEvOwners = evOwnerRepository.findAll();
         List<EvOwner> evOwnersWithIdTag = new ArrayList<>();
+        
         for (EvOwner owner : allEvOwners) {
             if (owner.getIdTag() != null && !owner.getIdTag().isEmpty()) {
                 evOwnersWithIdTag.add(owner);
@@ -328,11 +208,10 @@ public ResponseEntity<?> handleAuthorize(
         }
 
         if (evOwnersWithIdTag.isEmpty()) {
-            System.out.println("❌ No EV owner with valid ID_TAG found");
+            System.out.println("❌ No EV owner with valid idTag found");
             Object[] errorResponse = new Object[]{
-                    3,
-                    parsed.messageId(),
-                    Map.of("idTagInfo", Map.of("status", "Invalid"))
+                3, parsed.messageId(),
+                Map.of("idTagInfo", Map.of("status", "Invalid", "message", "No EV owners registered"))
             };
             return ResponseEntity.ok(errorResponse);
         }
@@ -362,10 +241,10 @@ public ResponseEntity<?> handleAuthorize(
 
             tagInfo = new IdTagInfo();
             tagInfo.setIdTag(idTag);
-            tagInfo.setIdDevice(headerIdDevice);  // Link to the device
-            tagInfo.setStatus(status);
+            tagInfo.setIdDevice(headerIdDevice);
+            tagInfo.setStatus("Accepted");
             tagInfo.setExpiryDate(expiryDate);
-            tagInfo.setCreatedAt(LocalDateTime.now());
+            tagInfo.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
             idTagInfoRepository.save(tagInfo);
 
             System.out.println("✅ Created new ID_TAG_INFO for idTag: " + idTag);
@@ -373,14 +252,14 @@ public ResponseEntity<?> handleAuthorize(
 
         // Build response
         Map<String, Object> idTagInfoResponse = new HashMap<>();
-        idTagInfoResponse.put("status", status);
+        idTagInfoResponse.put("status", "Accepted");
         idTagInfoResponse.put("IdTag", idTag);
         idTagInfoResponse.put("expiryDate", expiryDate.toString() + "Z");
 
         Object[] ocppResponse = new Object[]{
-                3,
-                parsed.messageId(),
-                Map.of("idTagInfo", idTagInfoResponse)
+            3,
+            parsed.messageId(),
+            Map.of("idTagInfo", idTagInfoResponse)
         };
 
         System.out.println("✅ Returning response with ID_TAG: " + idTag);
@@ -390,13 +269,14 @@ public ResponseEntity<?> handleAuthorize(
     } catch (Exception e) {
         e.printStackTrace();
         Object[] errorResponse = new Object[]{
-                3,
-                "AUTH-REQ-FAILED",
-                Map.of("idTagInfo", Map.of("status", "Invalid"))
+            3,
+            "AUTH-REQ-FAILED",
+            Map.of("idTagInfo", Map.of("status", "Invalid", "message", e.getMessage()))
         };
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
+
 
     @PostMapping("/startTransaction")
     @Transactional
@@ -404,7 +284,7 @@ public ResponseEntity<?> handleAuthorize(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
 
-        LocalDateTime receivedAt = LocalDateTime.now();
+        LocalDateTime receivedAt = LocalDateTime.now(ZoneOffset.UTC);
         try {
             var parsed = OcppMessageParser.parse(rawBody);
             if (parsed.messageTypeId() != 2 || !"StartTransaction".equalsIgnoreCase(parsed.action())) {
@@ -423,7 +303,7 @@ public ResponseEntity<?> handleAuthorize(
             log.setPayload(parsed.payload().toString());
             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
             log.setReceivedAt(receivedAt);
-            log.setRespondedAt(LocalDateTime.now());
+            log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(log);
 
             return ResponseEntity.ok(ocppResponse);
@@ -456,215 +336,11 @@ public ResponseEntity<?> handleAuthorize(
         }
     }
 
-    // @PostMapping("/stopTransaction")
-    // @Transactional
-    // public ResponseEntity<?> handleStopTransaction(
-    //         @RequestBody String rawBody,
-    //         @RequestHeader("IdDevice") String idDevice) {
-
-    //     LocalDateTime receivedAt = LocalDateTime.now();
-
-    //     try {
-    //         // ✅ Validate header IdDevice
-    //         idDeviceValidator.validate(idDevice);
-
-    //         // ✅ Parse OCPP message
-    //         var parsed = OcppMessageParser.parse(rawBody);
-    //         if (parsed.messageTypeId() != 2 || !"StopTransaction".equalsIgnoreCase(parsed.action())) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Invalid message type or action. Expected StopTransaction"));
-    //         }
-
-    //         var payload = parsed.payload();
-    //         Integer transactionId = payload.has("transactionId") ? payload.get("transactionId").asInt() : null;
-    //         Long meterStop = payload.has("meterStop") ? payload.get("meterStop").asLong() : null;
-    //         String timestamp = payload.has("timestamp") ? payload.get("timestamp").asText() : null;
-    //         String idTag = payload.has("idTag") ? payload.get("idTag").asText() : null;
-
-    //         if (transactionId == null) {
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    //                     .body(Map.of("error", "Missing transactionId in payload"));
-    //         }
-
-    //         // ✅ Check session existence
-    //         var sessionOpt = chargingSessionService.getSessionById(transactionId);
-    //         if (sessionOpt == null || sessionOpt.getSessionId() == null) {
-    //             Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-    //             Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-
-    //             OcppMessageLog log = new OcppMessageLog();
-    //             log.setIdDevice(idDevice);
-    //             log.setMessageId(parsed.messageId());
-    //             log.setAction(parsed.action());
-    //             log.setMessageTypeId(parsed.messageTypeId());
-    //             log.setPayload(payload.toString());
-    //             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //             log.setReceivedAt(receivedAt);
-    //             log.setRespondedAt(LocalDateTime.now());
-    //             messageLogRepo.save(log);
-
-    //             return ResponseEntity.ok(ocppResponse);
-    //         }
-
-    //         // ✅ Validate IdTag belongs to same IdDevice if provided
-    //         if (idTag != null && !idTag.isEmpty()) {
-    //             var tagOpt = idTagInfoRepository.findByIdTagAndIdDevice(idTag, idDevice);
-
-    //             if (tagOpt.isEmpty()) {
-    //                 Map<String, Object> idTagInfo = Map.of("status", "Invalid");
-    //                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-
-    //                 OcppMessageLog log = new OcppMessageLog();
-    //                 log.setIdDevice(idDevice);
-    //                 log.setMessageId(parsed.messageId());
-    //                 log.setAction(parsed.action());
-    //                 log.setMessageTypeId(parsed.messageTypeId());
-    //                 log.setPayload(payload.toString());
-    //                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //                 log.setReceivedAt(receivedAt);
-    //                 log.setRespondedAt(LocalDateTime.now());
-    //                 messageLogRepo.save(log);
-
-    //                 return ResponseEntity.ok(ocppResponse);
-    //             }
-
-    //             var tag = tagOpt.get();
-    //             if (!"Accepted".equalsIgnoreCase(tag.getStatus())) {
-    //                 Map<String, Object> idTagInfo = Map.of("status", tag.getStatus());
-    //                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-
-    //                 OcppMessageLog log = new OcppMessageLog();
-    //                 log.setIdDevice(idDevice);
-    //                 log.setMessageId(parsed.messageId());
-    //                 log.setAction(parsed.action());
-    //                 log.setMessageTypeId(parsed.messageTypeId());
-    //                 log.setPayload(payload.toString());
-    //                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //                 log.setReceivedAt(receivedAt);
-    //                 log.setRespondedAt(LocalDateTime.now());
-    //                 messageLogRepo.save(log);
-
-    //                 return ResponseEntity.ok(ocppResponse);
-    //             }
-    //             if (tag.getExpiryDate().isBefore(LocalDateTime.now())) {
-    //                 Map<String, Object> idTagInfo = Map.of("status", "Expired");
-    //                 Object[] ocppResponse = new Object[]{3, parsed.messageId(), Map.of("idTagInfo", idTagInfo)};
-
-    //                 OcppMessageLog log = new OcppMessageLog();
-    //                 log.setIdDevice(idDevice);
-    //                 log.setMessageId(parsed.messageId());
-    //                 log.setAction(parsed.action());
-    //                 log.setMessageTypeId(parsed.messageTypeId());
-    //                 log.setPayload(payload.toString());
-    //                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //                 log.setReceivedAt(receivedAt);
-    //                 log.setRespondedAt(LocalDateTime.now());
-    //                 messageLogRepo.save(log);
-
-    //                 return ResponseEntity.ok(ocppResponse);
-    //             }
-    //         }
-
-    //         // ✅ Save meter values if present
-    //         if (payload.has("transactionData")) {
-    //             MeterValueRequest meterRequest = new MeterValueRequest();
-    //             meterRequest.setConnectorId(1);
-    //             meterRequest.setTransactionId(transactionId);
-
-    //             var readings = new java.util.ArrayList<MeterValueRequest.MeterReading>();
-    //             payload.get("transactionData").forEach(node -> {
-    //                 MeterValueRequest.MeterReading reading = new MeterValueRequest.MeterReading();
-    //                 reading.setTimestamp(node.get("timestamp").asText());
-    //                 var samples = new java.util.ArrayList<MeterValueRequest.SampleReading>();
-    //                 node.get("sampledValue").forEach(sv -> {
-    //                     MeterValueRequest.SampleReading sr = new MeterValueRequest.SampleReading();
-    //                     sr.setValue(sv.get("value").asText());
-    //                     sr.setMeasurand(sv.has("measurand") ? sv.get("measurand").asText() : "Energy.Active.Import.Register");
-    //                     samples.add(sr);
-    //                 });
-    //                 reading.setSampledValue(samples);
-    //                 readings.add(reading);
-    //             });
-    //             meterRequest.setMeterValue(readings);
-    //             meterValueService.saveMeterValues(meterRequest);
-    //         }
-
-    //         // ✅ Update session end info
-    //         chargingSessionService.endChargingSession(transactionId, meterStop, timestamp);
-
-    //         System.out.println("✅ Session " + transactionId + " ended. Total consumption: " +
-    //                         (meterStop != null ? meterStop + " kWh" : "N/A"));
-
-    //         // Asynchronously call billing API to avoid delaying OCPP response
-    //         final Integer finalTransactionId = transactionId;
-    //         CompletableFuture.runAsync(() -> {
-    //             try {
-    //                 System.out.println("🔥🔥🔥 TRIGGERING BILLING for transaction: " + finalTransactionId);
-    //                 Map<String, Object> billingResult = billingService.sendChargingDataToBilling(finalTransactionId);
-    //                 System.out.println("📡 Billing API call result: " + billingResult);
-
-    //                 // Note: WebSocket messaging is handled inside BillingService
-    //                 // You can add additional logging here if needed
-
-    //             } catch (Exception e) {
-    //                 System.err.println("❌ Failed to call billing API for transaction " + finalTransactionId + ": " + e.getMessage());
-    //                 e.printStackTrace();
-    //             }
-    //         });
-
-    //         // ✅ Build OCPP response
-    //         Map<String, Object> idTagInfo = Map.of("status", "Accepted");
-    //         Object[] ocppResponse = new Object[]{
-    //                 3,
-    //                 parsed.messageId(),
-    //                 Map.of("idTagInfo", idTagInfo)
-    //         };
-
-    //         // ✅ Create and save log
-    //         OcppMessageLog log = new OcppMessageLog();
-    //         log.setIdDevice(idDevice);
-    //         log.setMessageId(parsed.messageId());
-    //         log.setAction(parsed.action());
-    //         log.setMessageTypeId(parsed.messageTypeId());
-    //         log.setPayload(payload.toString());
-    //         log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
-    //         log.setReceivedAt(receivedAt);
-    //         log.setRespondedAt(LocalDateTime.now());
-    //         messageLogRepo.save(log);
-
-    //         return ResponseEntity.ok(ocppResponse);
-
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-
-    //         try {
-    //             var parsed = OcppMessageParser.parse(rawBody);
-    //             OcppMessageLog log = new OcppMessageLog();
-    //             log.setIdDevice(idDevice);
-    //             log.setMessageId(parsed.messageId());
-    //             log.setAction(parsed.action());
-    //             log.setMessageTypeId(parsed.messageTypeId());
-    //             log.setPayload(parsed.payload().toString());
-    //             log.setResponse("{\"error\": \"" + e.getMessage() + "\"}");
-    //             log.setReceivedAt(receivedAt);
-    //             log.setRespondedAt(LocalDateTime.now());
-    //             messageLogRepo.save(log);
-    //             System.out.println("⚠️ StopTransaction error logged: " + e.getMessage());
-    //         } catch (Exception logEx) {
-    //             System.err.println("Failed to save error log: " + logEx.getMessage());
-    //         }
-
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
-    //     }
-    // }
-
-
     @PostMapping("/stopTransaction")
-@Transactional
-public ResponseEntity<?> handleStopTransaction(
-        @RequestBody String rawBody,
-        @RequestHeader("IdDevice") String idDevice) {
+    @Transactional
+    public ResponseEntity<?> handleStopTransaction(
+            @RequestBody String rawBody,
+            @RequestHeader("IdDevice") String idDevice) {
 
     LocalDateTime receivedAt = LocalDateTime.now();
 
@@ -704,7 +380,7 @@ public ResponseEntity<?> handleStopTransaction(
             log.setPayload(payload.toString());
             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
             log.setReceivedAt(receivedAt);
-            log.setRespondedAt(LocalDateTime.now());
+            log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(log);
 
             return ResponseEntity.ok(ocppResponse);
@@ -727,7 +403,7 @@ public ResponseEntity<?> handleStopTransaction(
                 log.setPayload(payload.toString());
                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
                 log.setReceivedAt(receivedAt);
-                log.setRespondedAt(LocalDateTime.now());
+                log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
 
                 return ResponseEntity.ok(ocppResponse);
@@ -748,7 +424,7 @@ public ResponseEntity<?> handleStopTransaction(
                 log.setPayload(payload.toString());
                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
                 log.setReceivedAt(receivedAt);
-                log.setRespondedAt(LocalDateTime.now());
+                log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
 
                 return ResponseEntity.ok(ocppResponse);
@@ -766,7 +442,7 @@ public ResponseEntity<?> handleStopTransaction(
                 log.setPayload(payload.toString());
                 log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
                 log.setReceivedAt(receivedAt);
-                log.setRespondedAt(LocalDateTime.now());
+                log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
                 messageLogRepo.save(log);
 
                 return ResponseEntity.ok(ocppResponse);
@@ -833,7 +509,7 @@ public ResponseEntity<?> handleStopTransaction(
         log.setPayload(payload.toString());
         log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
         log.setReceivedAt(receivedAt);
-        log.setRespondedAt(LocalDateTime.now());
+        log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
         messageLogRepo.save(log);
 
         return ResponseEntity.ok(ocppResponse);
@@ -851,7 +527,7 @@ public ResponseEntity<?> handleStopTransaction(
             log.setPayload(parsed.payload().toString());
             log.setResponse("{\"error\": \"" + e.getMessage() + "\"}");
             log.setReceivedAt(receivedAt);
-            log.setRespondedAt(LocalDateTime.now());
+            log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(log);
             System.out.println("⚠️ StopTransaction error logged: " + e.getMessage());
         } catch (Exception logEx) {
@@ -868,7 +544,7 @@ public ResponseEntity<?> handleStopTransaction(
             @RequestBody String rawBody,
             @RequestHeader("IdDevice") String headerIdDevice) {
 
-        LocalDateTime receivedAt = LocalDateTime.now();
+        LocalDateTime receivedAt = LocalDateTime.now(ZoneOffset.UTC);
         try {
             idDeviceValidator.validate(headerIdDevice);
             var parsed = OcppMessageParser.parse(rawBody);
@@ -897,7 +573,7 @@ public ResponseEntity<?> handleStopTransaction(
             log.setPayload(payload.toString());
             log.setResponse(new ObjectMapper().writeValueAsString(ocppResponse));
             log.setReceivedAt(receivedAt);
-            log.setRespondedAt(LocalDateTime.now());
+            log.setRespondedAt(LocalDateTime.now(ZoneOffset.UTC));
             messageLogRepo.save(log);
 
             return ResponseEntity.ok(ocppResponse);
