@@ -28,11 +28,14 @@ public class OcppWebSocketService {
     @Autowired
     private OcppMessageProcessor ocppMessageProcessor;
     
+    @Autowired
+    private OcppActionService ocppActionService;
+    
     private final Map<String, WebSocketSession> deviceSessions = new ConcurrentHashMap<>();
     private final Map<String, String> sessionToDevice = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-        // Constructor injection
+    // Constructor injection
     public OcppWebSocketService(@Lazy SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
@@ -117,7 +120,7 @@ public class OcppWebSocketService {
         WebSocketSession session = deviceSessions.get(deviceId);
         
         if (session == null || !session.isOpen()) {
-            System.err.println("❌ Cannot send RemoteStartTransaction: Device not connected");
+            System.err.println("❌ Cannot send RemoteStartTransaction: Device not connected via WebSocket");
             return false;
         }
         
@@ -154,7 +157,7 @@ public class OcppWebSocketService {
         WebSocketSession session = deviceSessions.get(deviceId);
         
         if (session == null || !session.isOpen()) {
-            System.err.println("❌ Cannot send RemoteStopTransaction: Device not connected");
+            System.err.println("❌ Cannot send RemoteStopTransaction: Device not connected via WebSocket");
             return false;
         }
         
@@ -184,11 +187,24 @@ public class OcppWebSocketService {
     }
     
     /**
-     * Check if device is connected
+     * Check if device is connected (WebSocket OR recently active via REST)
      */
     public boolean isDeviceConnected(String deviceId) {
+        // 1) Check WebSocket session
         WebSocketSession session = deviceSessions.get(deviceId);
-        return session != null && session.isOpen();
+        if (session != null && session.isOpen()) {
+            return true;
+        }
+        // 2) No WebSocket – check last activity via REST (e.g., MeterValues, StatusNotification)
+        LocalDateTime lastActivity = ocppActionService.getLastActivity(deviceId);
+        if (lastActivity != null) {
+            boolean recent = lastActivity.isAfter(LocalDateTime.now().minusMinutes(2));
+            if (recent) {
+                System.out.println("🔍 Device " + deviceId + " considered connected (last REST activity: " + lastActivity + ")");
+            }
+            return recent;
+        }
+        return false;
     }
     
     /**

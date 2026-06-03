@@ -2,8 +2,10 @@ package com.example.EVProject.config;
 
 import com.example.EVProject.handler.OcppWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -19,9 +21,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
     @Autowired
     private OcppWebSocketHandler ocppWebSocketHandler;
 
+    @Bean
+    public ThreadPoolTaskScheduler webSocketHeartbeatTaskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("websocket-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic", "/queue");
+        // Use the custom ThreadPoolTaskScheduler for heartbeats
+        config.enableSimpleBroker("/topic", "/queue")
+              .setTaskScheduler(webSocketHeartbeatTaskScheduler()); // Keeps connections alive
         config.setApplicationDestinationPrefixes("/app", "/ws");
     }
 

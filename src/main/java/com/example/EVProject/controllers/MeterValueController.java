@@ -33,6 +33,8 @@ public class MeterValueController {
             @RequestHeader("IdDevice") String idDevice) {
 
         LocalDateTime receivedTime = LocalDateTime.now();
+        System.out.println("=== MeterValueController: Received request for device " + idDevice);
+        System.out.println("Raw body: " + rawBody);
 
         try {
             // 1. Validate IdDevice
@@ -42,17 +44,20 @@ public class MeterValueController {
             var parsed = OcppMessageParser.parse(rawBody);
 
             if (parsed.messageTypeId() != 2 || !"MeterValues".equalsIgnoreCase(parsed.action())) {
+                System.err.println("Invalid message type or action: " + parsed.messageTypeId() + " / " + parsed.action());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Invalid message type or action. Expected MeterValues"));
             }
 
             var payload = parsed.payload();
+            System.out.println("Parsed payload: " + payload.toString());
 
             // 3. Extract connectorId & transactionId
             Integer connectorId = payload.has("connectorId") ? payload.get("connectorId").asInt() : 1;
             Integer transactionId = payload.has("transactionId") ? payload.get("transactionId").asInt() : null;
 
             if (transactionId == null) {
+                System.err.println("Missing transactionId in payload");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Missing transactionId in payload"));
             }
@@ -72,8 +77,10 @@ public class MeterValueController {
                 meterService.saveMeterValues(request);
             }
 
-            // 5.  REAL-TIME PROCESSING: delegate to shared OcppActionService
+            // 5. REAL-TIME PROCESSING: delegate to shared OcppActionService
+            System.out.println("Calling ocppActionService.handleMeterValues for device " + idDevice);
             ocppActionService.handleMeterValues(idDevice, payload);
+            System.out.println("Returned from ocppActionService.handleMeterValues");
 
             // 6. Build MeterValues.conf response: [3, MessageId, {}]
             Object[] ocppResponse = new Object[]{3, parsed.messageId(), new HashMap<>()};
@@ -90,16 +97,19 @@ public class MeterValueController {
                 log.setReceivedAt(receivedTime);
                 log.setRespondedAt(LocalDateTime.now());
                 messageLogRepo.save(log);
+                System.out.println("Logged OCPP message to database");
             }
 
             // 8. Return OCPP .conf
             return ResponseEntity.ok(ocppResponse);
 
         } catch (IllegalArgumentException e) {
+            System.err.println("Validation error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Internal error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", e.getMessage()));
         }
